@@ -1,0 +1,83 @@
+(()=>{
+'use strict';
+const ID='foxDayOptimizerV15';
+const el=(t,s)=>{const x=document.createElement(t);if(s!==undefined)x.textContent=s;return x};
+const fmt=x=>Number(x).toFixed(2);
+const parts=d=>Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(p=>[p.type,p.value]));
+const localDate=d=>{const p=parts(d);return p.year+'-'+p.month+'-'+p.day};
+const key=d=>{const p=parts(d);return p.year+'-'+p.month+'-'+p.day+' '+p.hour+':'+p.minute};
+function slotsFor(date){const start=new Date(date+'T00:00:00Z').getTime()-86400000;const out=[];for(let t=start;t<start+72*3600000;t+=1800000){const d=new Date(t),p=parts(d);if(p.year+'-'+p.month+'-'+p.day!==date)continue;const h=+p.hour+(+p.minute)/60;if(h>=5.5&&h<23.5)out.push({at:d,clock:h,key:key(d)})}return out}
+function init(){if(document.getElementById(ID))return;const main=document.querySelector('main');if(!main)return;
+const box=el('section');box.id=ID;box.className='panel';box.style.cssText='margin:18px 0;padding:18px;border:1px solid #5278aa;border-radius:14px';box.append(el('h3','Solar-aware day optimiser · v1.5'));
+const info=el('p','READ-ONLY simulation. Uses manual/synthetic solar and household forecasts, not measured Fox or home data. Published Outgoing Agile rates are optional. Never sends inverter commands.');info.className='note';box.append(info);
+const form=el('div');form.style.cssText='display:flex;gap:10px;flex-wrap:wrap';const f={};
+for(const [k,label,val,min,max] of [['soc','SOC at 05:30 (%)',100,5,100],['capacity','EVO10 nominal capacity (kWh)',10.24,1,100],['min','Minimum SOC (%)',5,0,50],['target','19:00 target SOC (%)',20,5,100],['solar','Forecast solar generation 05:30–19:00 (kWh)',5,0,40],['load','Average household demand (kW)',0.4,0,10],['eff','Charge/discharge efficiency (%)',95,1,100],['maxcharge','Max battery charge (kW)',5,0,20],['maxdischarge','Max battery discharge (kW)',5,0,20],['export','Net export limit (kW)',3.5,0,20],['import','Avoided import price (p/kWh)',28,0,100]]){
+const l=el('label',label);l.style.cssText='display:flex;flex-direction:column;gap:4px;font-size:12px';const i=el('input');i.type='number';i.min=min;i.max=max;i.step='.01';i.value=val;i.style.cssText='width:140px;padding:8px';l.append(i);form.append(l);f[k]=i}box.append(form);
+const buttons=el('div');buttons.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:12px 0';const sample=el('button','Optimise with sample Agile prices');const published=el('button','Optimise with published Agile prices');for(const b of [sample,published]){b.type='button';buttons.append(b)}box.append(buttons);
+const status=el('p','No simulation run.');status.setAttribute('aria-live','polite');box.append(status);const result=el('div');result.style.cssText='white-space:pre-line;line-height:1.7';box.append(result);const table=el('div');table.style.cssText='overflow-x:auto';box.append(table);main.append(box);
+function simulate(c,slots,prices,optimise){
+ const quantum=.05,cap=Math.floor(c.capacity/quantum+1e-8),minimum=Math.ceil(c.capacity*c.min/100/quantum-1e-8),start=Math.min(cap,Math.max(minimum,Math.round(c.capacity*c.soc/100/quantum)));
+ const target=Math.ceil(c.capacity*c.target/100/quantum-1e-8),eff=c.eff/100,rate=c.import/100;
+ const shape=slots.map(s=>s.clock>=6&&s.clock<19?Math.max(0,Math.sin(Math.PI*(s.clock-6)/13)):0);const total=shape.reduce((a,b)=>a+b,0);
+ const input=slots.map((s,i)=>({clock:s.clock,solar:total?c.solar*shape[i]/total:0,house:c.load*.5,price:prices.get(s.key),at:s.at}));
+ // Full sequential dynamic program. Battery state is discretised to 0.05 kWh.
+ let states=new Map([[start,{value:0,import:0,export:0,forced:0,prev:null}]]);const history=[];
+ for(let t=0;t<input.length;t++){
+ const z=input[t],next=new Map();
+ for(const [q,st] of states){
+  const stored=q*quantum,solarHouse=Math.min(z.house,z.solar),houseDeficit=z.house-solarHouse,solarSurplus=z.solar-solarHouse;
+  const homeFromBattery=Math.min(houseDeficit,c.maxdischarge*.5*eff,Math.max(0,(stored-minimum*quantum)*eff));
+  const houseGrid=houseDeficit-homeFromBattery;
+  const afterHouse=stored-homeFromBattery/eff;
+  const solarCharge=Math.min(solarSurplus*eff,c.maxcharge*.5*eff,Math.max(0,c.capacity-afterHouse));
+  const afterSolar=afterHouse+solarCharge;
+  const naturalExport=Math.min(c.export*.5,Math.max(0,solarSurplus-solarCharge/eff));
+  const room=Math.max(0,c.export*.5-naturalExport);
+  const maxForced=(optimise&&z.clock<19&&z.price!==undefined)?Math.min(room,c.maxdischarge*.5*eff,Math.max(0,(afterSolar-minimum*quantum)*eff)):0;
+  const steps=Math.floor(maxForced/(quantum*eff)+1e-8);
+  for(let a=0;a<=steps;a++){
+   const forced=a*quantum*eff,after=afterSolar-a*quantum;
+   if(z.clock===18.5&&after+1e-8<target*quantum)continue;
+   const nq=Math.min(cap,Math.max(minimum,Math.floor(after/quantum+1e-8)));
+   // Conservatively round battery energy down; no creation of stored energy.
+   const earned=(naturalExport+forced)*(z.price||0)/100;
+   const value=st.value+earned-houseGrid*rate;
+   const prev=next.get(nq);
+   if(!prev||value>prev.value){next.set(nq,{value,import:st.import+houseGrid,export:st.export+naturalExport+forced,forced:st.forced+forced,prev:q,step:{...z,soc:nq*quantum,forced,naturalExport,grid:houseGrid,solarCharge,homeFromBattery}})}
+  }
+ }
+ if(!next.size)return {ok:false,reason:'The 19:00 SOC target cannot be reached with this solar forecast, starting SOC and household demand. No export plan can satisfy it.'};
+ history.push(next);states=next;
+ }
+ let best=null,bq=null;for(const [q,s] of states)if(!best||s.value>best.value){best=s;bq=q}
+ const steps=[];for(let t=history.length-1;t>=0;t--){const st=history[t].get(bq);steps.push(st.step);bq=st.prev}steps.reverse();
+ return {ok:true,...best,steps,at19:steps.find(x=>x.clock===18.5)?.soc||0,end:steps.at(-1)?.soc||0};
+}
+async function run(live){sample.disabled=published.disabled=true;status.textContent='Building sequential 30-minute simulation…';try{
+const c=Object.fromEntries(Object.entries(f).map(([k,x])=>[k,Number(x.value)]));if(Object.values(c).some(x=>!Number.isFinite(x)||x<0)||c.soc>100||c.min>=c.target||c.target>100||c.eff>100||c.eff<=0||c.maxdischarge<=0||c.maxcharge<=0||c.capacity<=0)throw Error('Check SOC, battery capacity, efficiency and power inputs.');
+const day=localDate(new Date());const slots=slotsFor(day);if(slots.length!==36)throw Error('Expected 36 daytime half-hour slots; found '+slots.length+'.');
+const prices=new Map();let source='SAMPLE PRICES (invented, not live)';
+if(live){const tariff='E-1R-AGILE-OUTGOING-19-05-13-E',product='AGILE-OUTGOING-19-05-13';const url='https://api.octopus.energy/v1/products/'+product+'/electricity-tariffs/'+tariff+'/standard-unit-rates/?period_from='+encodeURIComponent(slots[0].at.toISOString())+'&period_to='+encodeURIComponent(new Date(slots.at(-1).at.getTime()+1800000).toISOString())+'&page_size=250';const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),16000);let response;try{response=await fetch(url,{signal:controller.signal})}finally{clearTimeout(timeout)}if(!response.ok)throw Error('Octopus price request HTTP '+response.status);const json=await response.json();for(const r of json.results||[])if(r.valid_from&&Number.isFinite(Number(r.value_inc_vat)))prices.set(key(new Date(r.valid_from)),Number(r.value_inc_vat));source='PUBLISHED OCTOPUS PRICES (not your tariff or bill)';}
+else{for(const s of slots){const h=s.clock;prices.set(s.key,h<12?5:h<15?8:h<16?12:h<16.5?17:h<17?22:h<17.5?34:h<18?18:10)}}
+const base=simulate(c,slots,prices,false);const plan=simulate(c,slots,prices,true);if(!base.ok||!plan.ok)throw Error(plan.reason||base.reason);
+const priceSlots=slots.filter(s=>prices.has(s.key)&&s.clock<19).length;
+status.textContent=source+' · '+priceSlots+' of '+slots.filter(s=>s.clock<19).length+' pre-19:00 intervals priced · '+day+'.';
+const improvement=plan.value-base.value;
+result.textContent='SIMULATION ONLY · '+slots.length+' chronological half-hours (05:30–23:30)\n'+
+'Fox ESS EVO10 nominal capacity: '+fmt(c.capacity)+' kWh; minimum SOC: '+fmt(c.min)+'%\n'+
+'Forecast solar: '+fmt(c.solar)+' kWh; assumed home load: '+fmt(c.load)+' kW constant\n'+
+'19:00 protected target: '+fmt(c.target)+'% · predicted at 19:00: '+fmt(plan.at19/c.capacity*100)+'%\n'+
+'Predicted SOC at 23:30: '+fmt(plan.end/c.capacity*100)+'%\n'+
+'Planned forced battery export: '+fmt(plan.forced)+' kWh\n'+
+'Total modelled export (including natural solar): '+fmt(plan.export)+' kWh\n'+
+'Grid import needed 05:30–23:30: '+fmt(plan.import)+' kWh\n'+
+'Financial improvement versus NO forced battery export: £'+fmt(improvement)+'\n'+
+(improvement<=.001?'No positive-value forced export was identified under these assumptions.':'Only financially beneficial exports are selected by the optimiser.')+'\n\n'+
+'LIMITS: Forecast solar is an illustrative daylight curve, not a fetched weather forecast. Home load is constant, not learned. Model uses 0.05 kWh SOC steps and conservative rounding. Missing Octopus rates are never invented as published rates. Net export is capped at 3.5 kW per interval, not a daily kWh quota. Real inverter power limits, physical meter transients, solar export and actual 19:00 feasibility must be validated before any future control. No Fox/Ohme/Home Assistant access, production learning or actual dispatch.';
+const t=el('table');t.style.cssText='width:100%;border-collapse:collapse;font-size:12px';const head=el('tr');for(const h of ['UK time','Solar kWh','Home kWh','Agile p','Battery export kWh','SOC end %']){const th=el('th',h);th.style.padding='5px';head.append(th)}t.append(head);
+for(const s of plan.steps){const tr=el('tr');const p=parts(s.at);for(const v of [p.hour+':'+p.minute,fmt(s.solar),fmt(s.house),s.price===undefined?'—':fmt(s.price),fmt(s.forced),fmt(s.soc/c.capacity*100)]){const td=el('td',v);td.style.cssText='padding:5px;border-top:1px solid #52627a';tr.append(td)}t.append(tr)}table.replaceChildren(t);
+}catch(e){status.textContent='Simulation unavailable: '+e.message;result.textContent='';table.replaceChildren()}finally{sample.disabled=published.disabled=false}}
+sample.addEventListener('click',()=>run(false));published.addEventListener('click',()=>run(true));
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
