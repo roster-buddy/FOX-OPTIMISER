@@ -21,3 +21,15 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxTargetTablesV380{overflow-x:auto}#foxTargetResultV360{font-size:14px;line-height:1.7}#foxActualCosts>h3{margin-top:28px}
 @media(max-width:700px){.shell{padding:12px}#foxDashboardNav{gap:2px;padding:5px;border-radius:12px}#foxDashboardNav button{font-size:12px;padding:8px 4px}#foxDashboardIntro{padding-top:22px}#foxDashboardIntro h2{font-size:24px}main>.panel{padding:17px!important}#foxActualCosts>label{display:flex;flex-direction:column;align-items:flex-start;gap:8px}#foxActualEnd{width:100%}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* Actual calendar results and session bookings share the same date cells. */
+.fox-month-pnl{padding:18px;margin:16px 0;border:1px solid #3b506d;border-radius:12px;background:#15243a}
+.fox-month-pnl strong{display:block;font-size:22px;font-variant-numeric:tabular-nums}.fox-month-pnl p{font-size:13px;color:#c0cde0}
+.fox-month-pnl.profit{background:#133a30;border-color:#38866b}.fox-month-pnl.loss{background:#3b202c;border-color:#a25767}
+#v4CalendarGrid [data-pnl=profit]{background:#133a30!important;border-color:#38866b!important;color:#8ff1cd}
+#v4CalendarGrid [data-pnl=loss]{background:#3b202c!important;border-color:#a25767!important;color:#ffb7c3}
+#v4CalendarGrid [data-pnl=even]{background:#1b2b3f!important;color:#c4d4e8}
+#v4CalendarGrid [data-pnl=missing]{background:#111d30!important;color:#9bacc4}
+#v4CalendarGrid .fox-day-pnl{opacity:1!important;font-size:12px!important;font-weight:700;margin-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#v4CalendarGrid .fox-session-badge{color:#bed6ed!important;font-size:10px}
+@media(max-width:650px){#v4CalendarGrid .fox-day-pnl{font-size:10px!important}.fox-month-pnl strong{font-size:19px}}
