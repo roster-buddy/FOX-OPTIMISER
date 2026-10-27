@@ -41,6 +41,7 @@ function cases(){
 }
 
 if(typeof module!=='undefined')module.exports={gate,cases};
+if(typeof window!=='undefined')window.FoxDataResearch={gate};
 if(typeof document==='undefined')return;
 const section=document.createElement('section');
 section.style.cssText=

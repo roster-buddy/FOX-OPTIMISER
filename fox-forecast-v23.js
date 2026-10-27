@@ -2,7 +2,8 @@
 (function(){
 'use strict';
 
-function run(mode,solarFactor,loadFactor){
+function run(mode,solarFactor,loadFactor,control=null){
+ const trace=[];
  const capacity=10.24,eff=.95,min=capacity*.05,target=capacity*.20;
  const clocks=Array.from({length:36},(_,i)=>5.5+i*.5);
  const solar=clocks.map(t=>Math.max(0,Math.sin((t-7)/11*Math.PI))*(t<18?.32:0));
@@ -71,7 +72,17 @@ function run(mode,solarFactor,loadFactor){
   const remaining=mode==='adaptive'
    ?plan(i,energy,solar.map(x=>x*scale),clocks.map(()=>.15*loadScale))
    :initial;
-  const z=step(energy,actualPV,actualHome,remaining[i]);
+  const decision=control?control({
+   clock:clocks[i],soc:energy/capacity*100,
+   requestedKW:remaining[i]*2
+  }):{kw:remaining[i]*2};
+  const allowed=Number.isFinite(decision?.kw)
+   ?Math.max(0,Math.min(remaining[i],decision.kw/2)):0;
+  const z=step(energy,actualPV,actualHome,allowed);
+  trace.push({
+   clock:clocks[i],requested:remaining[i],
+   forced:z.forced,allowed,reason:decision?.reason||''
+  });
   if(remaining.infeasible){
    shortfallIntervals++;
    exportDuringShortfall+=z.forced;
@@ -92,12 +103,13 @@ function run(mode,solarFactor,loadFactor){
   loadScale=actualHome/.15;
  }
  return {
-  at19,end:energy,grid,cancelled,residual,actualForced,actualNatural,shortfallIntervals,exportDuringShortfall,
+  at19,end:energy,grid,cancelled,residual,trace,actualForced,actualNatural,shortfallIntervals,exportDuringShortfall,
   pass:at19>=20-1e-7
  };
 }
 
 if(typeof module!=='undefined')module.exports={run};
+if(typeof window!=='undefined')window.FoxForecastResearch={run};
 if(typeof document==='undefined')return;
 
 const section=document.createElement('section');
