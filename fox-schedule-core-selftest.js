@@ -68,6 +68,9 @@ const code=source.slice(
 );
 const status={textContent:''};
 const context={
+ Date:class extends Date {
+  static now(){return Date.parse(slots[0].utc);}
+ },
  window:{
   FoxScheduleCore:core,
   FoxEnergyCore:require('./fox-energy-core.js'),

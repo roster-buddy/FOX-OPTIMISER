@@ -375,8 +375,51 @@ function simulateV2(slots, exports) {
   };
 }
 
+// Provisional data freshness policy: successful retrieval within 60 minutes.
+// This is not a measurement timestamp or weather model issue time.
+function forecastFreshV320(loaded, now) {
+  return Number.isFinite(loaded) && Number.isFinite(now) &&
+    loaded <= now && now - loaded < 3600000;
+}
+
 function plan() {
+  const now = Date.now();
+  const boundary = Math.ceil(now / 1800000) * 1800000;
+  prices = prices.filter(x => x.start >= boundary);
+
+  if (priceSource === 'live' &&
+      !forecastFreshV320(v4LastPriceCheck, now)) {
+    lastPlan = [];
+    renderEmpty();
+    $('priceStatus').textContent =
+      'STALE / UNVERIFIED PRICES · Export plan withheld. Load fresh Octopus rates.';
+    return;
+  }
+
+  if (priceSource === 'live' && !prices.length) {
+    lastPlan = [];
+    renderEmpty();
+    $('priceStatus').textContent =
+      'PRICE COVERAGE EXPIRED · No complete future half-hours remain. Load Octopus rates.';
+    return;
+  }
+
+  if (typeof solarForecastActive !== 'undefined' && solarForecastActive) {
+    let covered = true;
+    for (let i = 0; i < 48; i++) {
+      const key = Math.floor((boundary + i * 1800000) / 3600000) * 3600000;
+      if (!solarForecastHours.has(key)) covered = false;
+    }
+    if (!forecastFreshV320(v4LastSolarCheck, now) || !covered) {
+      solarForecastActive = false;
+      solarForecastHours.clear();
+      const status = document.getElementById('solarForecastStatus');
+      if (status) status.textContent =
+        'STALE / INCOMPLETE SOLAR FORECAST · Using estimated solar curve. Reload the weather forecast.';
+    }
+  }
   if (!prices.length) {
+    lastPlan = [];
     renderEmpty();
     return;
   }
@@ -439,7 +482,9 @@ function plan() {
       " · WARNING: forecast household usage may breach 20% at 19:00" :
       " · 19:00 target checked";
     status.textContent = source + " · " +
-      slots.length + " half-hours" + note;
+      slots.length + " half-hours" + note +
+      (typeof solarForecastActive !== 'undefined' && !solarForecastActive ?
+        " · Estimated solar curve" : "");
   }
 }
 
@@ -493,13 +538,101 @@ defaults to zero.</p>`;
   (!opt.reached19?' — 19:00 checkpoint unavailable.':
    !opt.valid?' — WARNING: reserve forecast fails.':'');
 }
-function renderEmpty(){const f=document.getElementById('financialResult');if(f)f.textContent='No price data loaded; financial comparison unavailable.';$('schedule').textContent='No prices loaded. Tap “Load live Octopus prices” or use clearly labelled sample data.';$('priceChart').getContext('2d').clearRect(0,0,1000,320);$('exportDisplay').textContent='—';$('revenueDisplay').textContent='No forecast yet';$('nextAction').textContent='Waiting';$('nextActionTime').textContent='Load prices to begin';$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`}
-function render(){const exportKwh=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh:0),0);const revenue=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh*Math.max(0,x.rate):0),0);$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`;$('exportDisplay').textContent=`${exportKwh.toFixed(2)} kWh`;$('revenueDisplay').textContent=`${formatMoney(revenue)} gross export revenue`;
+
+function renderForecastSocV330(slots) {
+  let panel = document.getElementById('forecastSocPanel');
+  if (!slots.length) {
+    if (panel) panel.replaceChildren(Object.assign(
+      document.createElement('p'),
+      {textContent:'Forecast SOC unavailable — load valid future prices.'}
+    ));
+    return;
+  }
+  if (!panel) {
+    const anchor = document.getElementById('priceChart');
+    if (!anchor) return;
+    panel = document.createElement('section');
+    panel.id = 'forecastSocPanel';
+    panel.style.cssText =
+      'margin:16px 0;padding:18px;border:1px solid #334765;' +
+      'border-radius:16px;background:#121e32;color:#fff';
+    anchor.insertAdjacentElement('afterend', panel);
+  }
+  const make = (tag, text) => Object.assign(
+    document.createElement(tag), {textContent:text}
+  );
+  const heading = make('h2', 'Forecast battery SOC');
+  const note = make('p',
+    'SIMULATED · Starting assumption: ' + settings.soc +
+    '% at ' + date(slots[0].start) + ' ' + time(slots[0].start) +
+    '. Uses estimated solar and household demand; no live battery readings. ' +
+    'Times are Europe/London. Each row shows SOC at the END of that half-hour.'
+  );
+  note.style.cssText='color:#aabbd4;line-height:1.5';
+  const checkpoints = slots.filter(x =>
+    hour(x.start + 1800000) === 19 && mins(x.start + 1800000) === 0
+  );
+  const summary = document.createElement('div');
+  if (!checkpoints.length) {
+    summary.append(make('p',
+      '19:00 prediction unavailable within the current price coverage.'
+    ));
+  }
+  for (const x of checkpoints) {
+    const meets = x.socEnd >= 20 - 1e-7;
+    const line = make('p',
+      date(x.start + 1800000) + ' 19:00: ' +
+      x.socEnd.toFixed(2) + '% predicted · Target ≥20% · ' +
+      (meets ? 'Target met in simulation' : 'WARNING: below target')
+    );
+    line.style.cssText =
+      'font-weight:700;color:' + (meets ? '#5be0b4' : '#ffb86b');
+    summary.append(line);
+  }
+  const scroll = document.createElement('div');
+  scroll.style.cssText='overflow:auto;max-height:380px';
+  const table = document.createElement('table');
+  table.style.cssText='width:100%;border-collapse:collapse;text-align:left';
+  const head = document.createElement('thead');
+  const header = document.createElement('tr');
+  for (const text of ['End time (UK)', 'Predicted SOC', 'Checkpoint']) {
+    const cell = make('th', text);
+    cell.style.cssText='padding:10px 8px;border-bottom:1px solid #506480';
+    header.append(cell);
+  }
+  head.append(header);
+  const body = document.createElement('tbody');
+  for (const x of slots) {
+    const end = x.start + 1800000;
+    const checkpoint = hour(end) === 19 && mins(end) === 0;
+    const row = document.createElement('tr');
+    const label = checkpoint ?
+      (x.socEnd >= 20 - 1e-7 ? '19:00 target met' : '19:00 BELOW TARGET') :
+      (x.socEnd < 5 - 1e-7 ? 'BELOW 5% MINIMUM' : '');
+    for (const text of [
+      date(end) + ' ' + time(end),
+      x.socEnd.toFixed(2) + '%',
+      label
+    ]) {
+      const cell = make('td', text);
+      cell.style.cssText='padding:9px 8px;border-bottom:1px solid #263850';
+      row.append(cell);
+    }
+    if (checkpoint) row.style.cssText='background:#24344b;font-weight:700';
+    body.append(row);
+  }
+  table.append(head, body);
+  scroll.append(table);
+  panel.replaceChildren(heading, note, summary, scroll);
+}
+
+function renderEmpty(){renderForecastSocV330([]);const f=document.getElementById('financialResult');if(f)f.textContent='No price data loaded; financial comparison unavailable.';$('schedule').textContent='No prices loaded. Tap “Load live Octopus prices” or use clearly labelled sample data.';$('priceChart').getContext('2d').clearRect(0,0,1000,320);$('exportDisplay').textContent='—';$('revenueDisplay').textContent='No forecast yet';$('nextAction').textContent='Waiting';$('nextActionTime').textContent='Load prices to begin';$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`}
+function render(){renderForecastSocV330(lastPlan);const exportKwh=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh:0),0);const revenue=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh*Math.max(0,x.rate):0),0);$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`;$('exportDisplay').textContent=`${exportKwh.toFixed(2)} kWh`;$('revenueDisplay').textContent=`${formatMoney(revenue)} gross export revenue`;
 const next=lastPlan.find(x=>x.action==='Export');$('nextAction').textContent=next?next.action:'Hold battery';$('nextActionTime').textContent=next?`${date(next.start)} ${time(next.start)}`:'No financially attractive export slots';$('chartNote').textContent=priceSource==='live'?'Live Octopus public rates · future half-hours only.':'SAMPLE PRICES — synthetic data, not actual Octopus rates.';
 $('schedule').replaceChildren(...lastPlan.map(x=>{const el=document.createElement('div');el.className=`slot ${x.action==='Export'?'export':x.action==='Cheap charge'?'charge':''}`;const t=document.createElement('span');t.className='time';t.textContent=`${date(x.start)} ${time(x.start)}`;const a=document.createElement('b');a.textContent=x.action==='Export'?`Export ${x.kwh.toFixed(2)} kWh`:x.action==='Cheap charge'?`Charge ${x.kwh.toFixed(2)} kWh`:'Hold / self-use';const p=document.createElement('span');p.className='price';p.textContent=`${x.rate.toFixed(1)}p`;el.append(t,a,p);return el}));drawChart()}
 function drawChart(){const canvas=$('priceChart'),ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);if(!lastPlan.length)return;const data=lastPlan.slice(0,64);const vals=data.map(x=>x.rate);const min=Math.min(0,...vals),max=Math.max(10,...vals);const left=45,right=15,top=15,bottom=38,chartW=W-left-right,chartH=H-top-bottom;ctx.strokeStyle='#314560';ctx.lineWidth=1;ctx.font='17px system-ui';ctx.fillStyle='#9bb0ce';for(let i=0;i<=4;i++){const y=top+chartH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(W-right,y);ctx.stroke();ctx.fillText((max-(max-min)*i/4).toFixed(0),5,y+5)}const barW=chartW/data.length;data.forEach((x,i)=>{const y=top+chartH*(max-x.rate)/(max-min);const zero=top+chartH*max/(max-min);ctx.fillStyle=x.action==='Export'?'#5be0b4':'#6486d8';ctx.fillRect(left+i*barW+1,Math.min(y,zero),Math.max(2,barW-2),Math.max(1,Math.abs(zero-y)));if(i%Math.max(1,Math.ceil(data.length/8))===0){ctx.fillStyle='#9bb0ce';ctx.font='15px system-ui';ctx.fillText(time(x.start),left+i*barW,H-9)}})}
 function samplePrices(){const now=Date.now(),start=Math.ceil(now/1800000)*1800000;prices=Array.from({length:48},(_,i)=>{const t=start+i*1800000,h=hour(t);const rate= h>=17&&h<19?35+(h===17?8:0):h>=16&&h<21?24:h>=0&&h<6?5:12;return{start:t,rate}});priceSource='sample';$('priceStatus').textContent='SAMPLE MODE · No live rates';plan()}
-async function loadLive(){if(!readSettings())return;const tariff=settings.tariff;const match=tariff.match(/^[A-Z]-1R-(.+)-[A-Z]$/);if(!match){$('priceStatus').textContent='Invalid tariff code format. Check your Octopus export tariff.';return}const product=match[1];const start=new Date(Math.ceil(Date.now()/1800000)*1800000).toISOString();const end=new Date(Date.now()+48*3600000).toISOString();const url=`https://api.octopus.energy/v1/products/${encodeURIComponent(product)}/electricity-tariffs/${encodeURIComponent(tariff)}/standard-unit-rates/?period_from=${encodeURIComponent(start)}&period_to=${encodeURIComponent(end)}&page_size=250`;$('priceStatus').textContent='Loading public Octopus rates…';try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),60000);let response;try{response=await fetch(url,{signal:controller.signal})}finally{clearTimeout(timer)}if(!response.ok)throw Error(`Octopus returned HTTP ${response.status}`);const data=await response.json();if(!Array.isArray(data.results))throw Error('Unexpected Octopus response');const found=data.results.filter(x=>x.valid_from&&Number.isFinite(Number(x.value_inc_vat))&&Date.parse(x.valid_from)>=Math.ceil(Date.now()/1800000)*1800000).map(x=>({start:Date.parse(x.valid_from),rate:Number(x.value_inc_vat)})).sort((a,b)=>a.start-b.start);if(!found.length)throw Error('No future published half-hour rates');prices=found;priceSource='live';v4LastPriceCheck=Date.now();v4UpdateRefreshStatus();$('priceStatus').textContent=`LIVE OCTOPUS · ${prices.length} published half-hours`;plan()}catch(e){$('priceStatus').textContent=`Live rates unavailable: ${e.message}. Existing data unchanged.`}}
+async function loadLive(){if(!readSettings())return;const tariff=settings.tariff;const match=tariff.match(/^[A-Z]-1R-(.+)-[A-Z]$/);if(!match){$('priceStatus').textContent='Invalid tariff code format. Check your Octopus export tariff.';return}const product=match[1];const start=new Date(Math.ceil(Date.now()/1800000)*1800000).toISOString();const end=new Date(Date.now()+48*3600000).toISOString();const url=`https://api.octopus.energy/v1/products/${encodeURIComponent(product)}/electricity-tariffs/${encodeURIComponent(tariff)}/standard-unit-rates/?period_from=${encodeURIComponent(start)}&period_to=${encodeURIComponent(end)}&page_size=250`;$('priceStatus').textContent='Loading public Octopus rates…';try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),60000);let response;try{response=await fetch(url,{signal:controller.signal})}finally{clearTimeout(timer)}if(!response.ok)throw Error(`Octopus returned HTTP ${response.status}`);const data=await response.json();if(!Array.isArray(data.results))throw Error('Unexpected Octopus response');const found=data.results.filter(x=>x.valid_from&&Number.isFinite(Number(x.value_inc_vat))&&Date.parse(x.valid_from)>=Math.ceil(Date.now()/1800000)*1800000).map(x=>({start:Date.parse(x.valid_from),rate:Number(x.value_inc_vat)})).sort((a,b)=>a.start-b.start);if(!found.length)throw Error('No future published half-hour rates');prices=found;priceSource='live';v4LastPriceCheck=Date.now();v4UpdateRefreshStatus();$('priceStatus').textContent=`LIVE OCTOPUS · ${prices.length} published half-hours`;plan()}catch(e){plan();$('priceStatus').textContent+=` · Price refresh failed: ${e.message}. Last successful-load time retained.`}}
 function downloadCSV(){if(!lastPlan.length)return;const lines=['UK date,UK time,Export rate p/kWh,Recommended action,Estimated energy kWh,Data source',...lastPlan.map(x=>`${date(x.start)},${time(x.start)},${x.rate.toFixed(3)},${x.action},${x.kwh.toFixed(3)},${priceSource}`)];const url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='fox-optimiser-plan.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $('settings').addEventListener('input',()=>{if(readSettings())plan()});$('refreshBtn').addEventListener('click',loadLive);$('liveBtn').addEventListener('click',loadLive);$('sampleBtn').addEventListener('click',samplePrices);$('downloadBtn').addEventListener('click',downloadCSV);$('resetBtn').addEventListener('click',()=>{settings={...DEFAULTS};inputSettings();localStorage.setItem('fox-settings',JSON.stringify(settings));prices=[];priceSource='none';renderEmpty();loadLive()});inputSettings();renderEmpty();loadLive();
 
@@ -815,3 +948,12 @@ Object.defineProperty(
     }
   }
 );
+
+
+// Recheck expiry without waiting for a network request to finish.
+setInterval(() => {
+  if (document.visibilityState === 'visible') plan();
+}, 60000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') plan();
+});
