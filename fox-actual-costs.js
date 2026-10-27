@@ -39,6 +39,7 @@ function setup(){
   <p>Recorded energy only · 23:30 to 23:30 · Europe/London. No forecasts or assumed battery refill.</p>
   <label>Accounting day ending on <input type="date" id="foxActualEnd"></label>
   <p id="foxActualPeriod" aria-live="polite"></p>
+  <button type="button" id="foxActualCSV" disabled>Export actual report CSV</button><p class="note">Export becomes available when recorded readings exist. Missing values remain blank in the file.</p>
   <h3>Connections</h3>
   <ul><li>Octopus: not connected — recorded grid import, export and applicable tariffs.</li>
   <li>Fox ESS: not connected — solar generation, battery charging/discharging and household energy.</li>
@@ -50,8 +51,17 @@ function setup(){
   <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
   <p>Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>`;
   host.prepend(panel);
+  let currentReport=null;
+  const download=panel.querySelector('#foxActualCSV');
+  if(download)download.addEventListener('click',()=>{
+   const csv=root.FoxActualReport?.csv(currentReport);if(!csv)return;
+   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+   const link=document.createElement('a');link.href=url;link.download='fox-actual-'+input.value+'.csv';link.click();
+   setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
   const input=panel.querySelector('#foxActualEnd');input.value=latestEndDay(Date.now());input.max=input.value;
   const update=()=>{
+   currentReport=null;if(download)download.disabled=true;
    const output=panel.querySelector('#foxActualPeriod');
    try{const w=windowFor(input.value);const pretty=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
     renderReport(w);
@@ -61,6 +71,8 @@ function setup(){
   function renderReport(w){
    const body=panel.querySelector('#foxActualRows');body.replaceChildren();
    const report=root.FoxActualReport?.build(input.value,{},Date.now());
+   currentReport=report;
+   if(download)download.disabled=!root.FoxActualReport?.csv(report);
    const status=panel.querySelector('#foxActualReconciliation');
    if(status)status.textContent='Import check: '+(report?.importCheck?.available?'Reconciled':report?.importCheck?.reason||'Waiting for readings')+'. Export split check: '+(report?.exportCheck?.available?'Reconciled':report?.exportCheck?.reason||'Waiting for readings')+'.';
    const metrics=[
