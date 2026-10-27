@@ -37,3 +37,17 @@ console.log(
  'V2.3.1 TESTS PASS: export totals, energy accounting, '+
  'adaptive scenarios and extreme reserve miss'
 );
+
+// v2.3.3 shortfall regression
+{
+ const stressed=run('adaptive',0,5);
+ assert(stressed.shortfallIntervals>0);
+ assert.equal(stressed.exportDuringShortfall,0);
+ assert.equal(stressed.pass,false);
+
+ const normal=run('adaptive',1,1);
+ assert.equal(normal.shortfallIntervals,0);
+ assert.equal(normal.pass,true);
+
+ console.log('PASS: shortfall detection and export-stop regression');
+}
