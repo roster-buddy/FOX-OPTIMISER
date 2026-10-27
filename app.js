@@ -146,6 +146,44 @@ function initialiseSolarV3() {
   if (lat !== null && lon !== null) loadSolarForecastV3();
 }
 
+
+// Validate hourly UTC irradiance before activating a weather forecast.
+function validateSolarHoursV310(times, values, now) {
+  if (!Number.isFinite(now) ||
+      !Array.isArray(times) || !Array.isArray(values) ||
+      !times.length || times.length !== values.length) {
+    throw Error("Missing solar forecast data");
+  }
+  const next = new Map();
+  for (let i = 0; i < times.length; i++) {
+    const t = times[i];
+    const watts = values[i];
+    if (typeof t !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:00$/.test(t)) {
+      throw Error("Invalid solar forecast hour");
+    }
+    const when = Date.parse(t + "Z");
+    if (!Number.isFinite(when) ||
+        new Date(when).toISOString().slice(0,16) !== t) {
+      throw Error("Invalid solar forecast hour");
+    }
+    if (typeof watts !== "number" ||
+        !Number.isFinite(watts) || watts < 0) {
+      throw Error("Invalid solar irradiance");
+    }
+    if (next.has(when)) throw Error("Duplicate solar forecast hour");
+    next.set(when, watts);
+  }
+  const start = Math.ceil(now / 1800000) * 1800000;
+  for (let i = 0; i < 48; i++) {
+    const hourStart = Math.floor((start + i * 1800000) / 3600000) * 3600000;
+    if (!next.has(hourStart)) {
+      throw Error("Solar forecast missing next-24-hour coverage");
+    }
+  }
+  return next;
+}
+
 async function loadSolarForecastV3() {
   const latInput = document.getElementById("solarLatitude");
   const lonInput = document.getElementById("solarLongitude");
@@ -195,21 +233,7 @@ async function loadSolarForecastV3() {
     const times = json.hourly?.time;
     const values = json.hourly?.global_tilted_irradiance;
 
-    if (!Array.isArray(times) || !Array.isArray(values) ||
-        times.length !== values.length) {
-      throw Error("Missing solar forecast data");
-    }
-
-    const next = new Map();
-    times.forEach((t, i) => {
-      const when = Date.parse(t + "Z");
-      const watts = Number(values[i]);
-      if (Number.isFinite(when) && Number.isFinite(watts)) {
-        next.set(when, Math.max(0, watts));
-      }
-    });
-
-    if (!next.size) throw Error("Empty solar forecast");
+    const next = validateSolarHoursV310(times, values, Date.now());
 
     solarForecastHours = next;
     solarForecastActive = true;
