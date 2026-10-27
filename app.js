@@ -502,17 +502,31 @@ defaults to zero.</p>`;
   eff:Math.max(.5,Math.min(1,settings.efficiency/100)),
   refillP:settings.cheapImport,wearP:financialWearP
  });
- const money=x=>'£'+x.toFixed(2);
- document.getElementById('financialResult').textContent=
-  'Gross export revenue, all modelled solar + battery: '+
-  money(f.opt.revenue)+
-  '. Import cost within horizon: '+money(f.opt.importCost)+
-  '. Remaining assumed refill: '+money(f.opt.refillCost)+
-  '. Improvement before additional wear: '+money(f.gross)+
-  '. Additional assumed wear: '+money(f.wearCost)+
-  '. Estimated improvement after additional wear: '+money(f.net)+
-  (!opt.reached19?' — 19:00 checkpoint unavailable.':
-   !opt.valid?' — WARNING: reserve forecast fails.':'');
+ const money=x=>(x<0?'−£':'£')+Math.abs(x).toFixed(2);
+ const rows=[
+  ['Export earnings (solar + battery)',f.base.revenue,f.opt.revenue],
+  ['Import cost within forecast',f.base.importCost,f.opt.importCost],
+  ['Remaining assumed refill to 100%',f.base.refillCost,f.opt.refillCost],
+  ['Net energy cost before wear',f.base.beforeWear,f.opt.beforeWear]
+ ];
+ const result=document.getElementById('financialResult');
+ result.innerHTML=
+  '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:left">'+
+  '<thead><tr><th>Forecast component</th><th>Self-use</th><th>Selected plan</th></tr></thead>'+
+  '<tbody>'+rows.map(([label,baseValue,optValue])=>
+   '<tr><td style="padding:9px 6px;border-bottom:1px solid #334765">'+label+
+   '</td><td>'+money(baseValue)+'</td><td>'+money(optValue)+'</td></tr>'
+  ).join('')+'</tbody></table></div>'+
+  '<p>Improvement before additional wear: <b>'+money(f.gross)+'</b><br>'+
+  'Additional battery discharge: '+f.extraDischarge.toFixed(2)+' kWh<br>'+
+  'Additional assumed wear at '+financialWearP.toFixed(1)+'p/kWh: '+
+  money(f.wearCost)+'</p>'+
+  '<p><b>Estimated net benefit versus self-use: '+money(f.net)+'</b></p>'+
+  '<p class="note">Net energy cost = import + remaining refill − export earnings. '+
+  'A negative cost means estimated earnings exceed those energy costs. '+
+  'Net benefit deducts wear on additional battery discharge; no credit is given for reduced wear.</p>'+
+  (!opt.reached19?'<p>19:00 checkpoint unavailable.</p>':
+   !opt.valid?'<p>WARNING: reserve forecast fails.</p>':'');
 }
 
 
