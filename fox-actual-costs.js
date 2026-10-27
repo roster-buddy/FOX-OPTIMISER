@@ -45,7 +45,7 @@ function setup(){
   <li>Ohme / charger meter: not connected — recorded EV charging.</li></ul>
   <p>Waiting for your hardware and API setup. Live collection is disabled. No API keys are requested or stored here.</p>
   <p>Confirmed import rates including VAT: daytime 23.2995p/kWh; regular overnight 3.4965p/kWh (23:30–05:30). Historical costs require the tariff applicable to each recorded interval, including confirmed Smart charging rates. Your current export rate has not been configured; Agile prices elsewhere are a planning scenario.</p>
-  <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
+  <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th><th>Data status</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
   <h3>House and EV savings</h3><p>Battery / solar supplied to the house: Data unavailable.<br>Battery / solar supplied to the EV: Data unavailable.<br>Equivalent grid cost: Data unavailable.<br>Allocated actual supply cost: Data unavailable.<br>Savings: Data unavailable.</p>
   <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
   <p>Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>`;
@@ -54,13 +54,36 @@ function setup(){
   const update=()=>{
    const output=panel.querySelector('#foxActualPeriod');
    try{const w=windowFor(input.value);const pretty=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    renderReport(w);
     output.textContent=pretty.format(new Date(w.start))+' → '+pretty.format(new Date(w.end))+' · '+((w.end-w.start)/3600000)+' hours. '+(w.end>Date.now()?'Period not complete.':'No recorded readings connected.');
    }catch(e){output.textContent=e.message;}
   };
-  const items=['Battery grid charging · overnight','Battery grid charging · rest of day','EV grid charging','Household grid purchases','Direct solar export','Battery export','Total metered export','Export earnings less battery and EV charging','Standing charge'];
-  for(const item of items){const row=document.createElement('tr');for(const label of [item,'Data unavailable','Data unavailable']){const cell=document.createElement('td');cell.textContent=label;cell.style.padding='10px 6px';row.append(cell);}panel.querySelector('#foxActualRows').append(row);}
+  function renderReport(w){
+   const body=panel.querySelector('#foxActualRows');body.replaceChildren();
+   const report=root.FoxActualReport?.build(input.value,{},Date.now());
+   const metrics=[
+    ['Total grid import','gridImport'],['Total metered export / earnings','gridExport'],
+    ['Battery grid charging · whole accounting day','batteryCharge'],
+    ['EV grid charging','evCharge'],['Household grid purchases','houseGrid'],
+    ['Direct solar export','solarExport'],['Battery export','batteryExport'],
+    ['Export earnings less battery and EV charging','cashBalance'],
+    ['Net grid energy cost (import less export)','gridBalance'],['Standing charge','standingCharge']
+   ];
+   const cash=x=>(x<0?'−£':'£')+Math.abs(x).toFixed(2);
+   for(const [label,key] of metrics){
+    const metric=report?.[key];
+    const energy=Number.isFinite(metric?.total)?metric.total.toFixed(2)+' kWh':'Data unavailable';
+    const money=metric?.available&&Number.isFinite(metric.cost)?cash(metric.cost):
+     metric?.available&&Number.isFinite(metric.value)?cash(metric.value):'Data unavailable';
+    const row=document.createElement('tr');
+    for(const value of [label,energy,money,metric?.reason|| (metric?.available?'Complete recorded data':'Report module unavailable')]){
+     const cell=document.createElement('td');cell.textContent=value;cell.style.padding='10px 6px';row.append(cell);
+    }
+    body.append(row);
+   }
+  }
   input.addEventListener('change',update);update();
  };
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+ if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',init);else init();
 }
 })(typeof window!=='undefined'?window:globalThis);
