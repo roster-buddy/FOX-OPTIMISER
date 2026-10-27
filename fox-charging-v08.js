@@ -143,11 +143,15 @@ function renderTargetResearchV380(result) {
  );
 }
 
+let targetComparisonRequestedV455=false;
+let targetComparisonTimerV455;
 function compareTargetsV360(){
+ targetComparisonRequestedV455=true;
+ clearTimeout(targetComparisonTimerV455);
  renderTargetResearchV380(null);
  const output=document.getElementById('foxTargetResultV360');
  output.textContent='Calculating research comparison...';
- setTimeout(()=>{
+ targetComparisonTimerV455=setTimeout(()=>{
   try{
    const now=Date.now();
    const night=window.FoxOvernightCore.windowFor(now);
@@ -287,6 +291,10 @@ window.foxChargingPlannerV06={refresh:render};
 // FOX_RESEARCH_REFRESH_453
 window.foxSolarAwareRefreshV08=function(){
  solarCard();
+ if(targetComparisonRequestedV455){
+  compareTargetsV360();
+  return;
+ }
  const output=document.getElementById('foxTargetResultV360');
  if(!output)return;
  renderTargetResearchV380(null);
