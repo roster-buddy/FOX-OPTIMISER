@@ -67,9 +67,17 @@ function render(){
  const batteryCapacity=n(
   document.querySelector('[name="capacity"]')?.value,9
  );
- const soc=clamp(n(
+ const manualSoc=clamp(n(
   document.querySelector('[name="soc"]')?.value,50
  ),0,100);
+ const night=window.FoxOvernightCore.windowFor(Date.now());
+ const projection=window.foxOvernightSocV350?.(night.start);
+ const soc=projection?.available?projection.soc:manualSoc;
+ const startingNote=projection?.available?
+  'Predicted SOC at 23:30: '+soc.toFixed(2)+'%. '+projection.source+
+  (projection.tailSlots?' · Evening self-use extended beyond price coverage; no extra forced exports.':''):
+  'MANUAL FALLBACK: '+manualSoc.toFixed(2)+'% assumed at 23:30. '+
+  (projection?.reason||'Daytime forecast link unavailable')+'.';
 
  const result=window.FoxOvernightCore.simulate({
   ...cfg,
@@ -104,10 +112,10 @@ function render(){
  const status=document.getElementById('foxChargeStatus');
  const evOK=evLeft<.05,batOK=batLeft<.05;
   if(deadlineOutsideWindow) { status.title='EV deadline is after 05:30. This simulation only models the 23:30–05:30 overnight window.'; } else { status.removeAttribute('title'); }
- status.textContent=`EV: ${fmt(evDelivered)} / ${fmt(evNeed)} kWh from mains by ${cfg.evDeadline} (${evOK?'feasible':'SHORT '+fmt(evLeft)+' kWh'}). Battery: ${fmt(batDelivered)} / ${fmt(batteryNeed)} kWh from mains (${batOK?'target feasible':'SHORT '+fmt(batLeft)+' kWh'}). Peak simultaneous grid import: ${cfg.gridKw.toFixed(1)} kW (provisional). Battery starts at 23:30; EV priority from assumed connection ${cfg.evConnect} UK time. Target: 100%.${result.householdExceedsCap?' WARNING: household demand alone exceeds the import ceiling.':''}`;
+ status.textContent=startingNote+' '+`EV: ${fmt(evDelivered)} / ${fmt(evNeed)} kWh from mains by ${cfg.evDeadline} (${evOK?'feasible':'SHORT '+fmt(evLeft)+' kWh'}). Battery: ${fmt(batDelivered)} / ${fmt(batteryNeed)} kWh from mains (${batOK?'target feasible':'SHORT '+fmt(batLeft)+' kWh'}). Peak simultaneous grid import: ${cfg.gridKw.toFixed(1)} kW (provisional). Battery starts at 23:30; EV priority from assumed connection ${cfg.evConnect} UK time. Target: 100%.${result.householdExceedsCap?' WARNING: household demand alone exceeds the import ceiling.':''}`;
  const tbody=document.getElementById('foxChargeRows');tbody.replaceChildren();
  for(const r of rows){const tr=document.createElement('tr');for(const x of [r.at,fmt(r.ev),fmt(r.bat),fmt(r.grid),r.free?'Booked free session*':'Intelligent Go · cheap']){const td=document.createElement('td');td.textContent=x;td.style.padding='7px 5px';tr.append(td)}tbody.append(tr)}
- document.getElementById('foxChargeFoot').textContent=`Estimated scheduled import: ${fmt(freeImport)} kWh in marked free slots and ${fmt(paidImport)} kWh in other slots. *The 23:30–05:30 period is shown as Intelligent Octopus Go cheap-rate unless a booked free session is explicitly marked. Free import is subject to Octopus eligibility, booked-hour allowances and actual metering. Rows show half-hour average power. Segment checks use assumed constant loads; they cannot enforce instantaneous limits. This simulates the whole selected night from entered starting SOC, not charging already delivered. This is a planning estimate, not a bill or live Ohme reading.`;
+ document.getElementById('foxChargeFoot').textContent=`Estimated scheduled import: ${fmt(freeImport)} kWh in marked free slots and ${fmt(paidImport)} kWh in other slots. *The 23:30–05:30 period is shown as Intelligent Octopus Go cheap-rate unless a booked free session is explicitly marked. Free import is subject to Octopus eligibility, booked-hour allowances and actual metering. Rows show half-hour average power. Segment checks use assumed constant loads; they cannot enforce instantaneous limits. This simulates the whole selected night from the labelled starting SOC, not charging already delivered. This is a planning estimate, not a bill or live Ohme reading.`;
 }
 function setup(){
  if(document.getElementById('foxChargingV06'))return;

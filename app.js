@@ -539,6 +539,55 @@ defaults to zero.</p>`;
    !opt.valid?' — WARNING: reserve forecast fails.':'');
 }
 
+
+// Project the selected plan to 23:30. Unpriced tail: self-use only.
+// Never invent export prices or forced exports beyond published coverage.
+function overnightSocV350(now, cutoff) {
+  const unavailable=reason=>({available:false,reason});
+  const boundary=Math.ceil(now/1800000)*1800000;
+  if(!Number.isFinite(cutoff)||cutoff<boundary)
+    return unavailable('23:30 has passed; entered SOC is a manual night-start scenario');
+  if(!lastPlan.length)
+    return unavailable('No valid daytime plan');
+  if(priceSource==='live'&&!forecastFreshV320(v4LastPriceCheck,now))
+    return unavailable('Price plan is stale');
+  const slots=lastPlan.filter(x=>x.start<cutoff);
+  let cursor=boundary;
+  let energy=settings.capacity*settings.soc/100;
+  const cap=settings.capacity;
+  const eff=Math.max(.5,Math.min(1,settings.efficiency/100));
+  if(!Number.isFinite(cap)||cap<=0)
+    return unavailable('Invalid battery capacity');
+  for(const x of slots){
+    if(x.start!==cursor||!Number.isFinite(x.socEnd)||
+       x.socEnd<0||x.socEnd>100)
+      return unavailable('Daytime plan has gaps or invalid SOC');
+    energy=cap*x.socEnd/100;
+    cursor+=1800000;
+  }
+  let tailSlots=0;
+  while(cursor<cutoff){
+    if(cursor+1800000>cutoff)
+      return unavailable('Unaligned overnight boundary');
+    const f=window.FoxEnergyCore.flow({
+      capacity:cap,eff,min:cap*.05,
+      chargeKW:V2.estimatedChargeKw,
+      dischargeKW:V2.batteryDischargeKw,
+      exportKW:V2.gridExportLimitKw
+    },energy,solarKwh(cursor),loadKwh(cursor),0,cap*.20);
+    energy=f.end;
+    cursor+=1800000;
+    tailSlots++;
+  }
+  return {
+    available:true,soc:100*energy/cap,at:cutoff,tailSlots,
+    source:priceSource==='sample'?'SAMPLE daytime plan':'Published-price daytime plan'
+  };
+}
+window.foxOvernightSocV350=function(cutoff){
+  return overnightSocV350(Date.now(),cutoff);
+};
+
 function renderForecastSocV330(slots) {
   let panel = document.getElementById('forecastSocPanel');
   if (!slots.length) {
