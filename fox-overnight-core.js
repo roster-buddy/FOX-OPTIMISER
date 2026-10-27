@@ -7,6 +7,8 @@ No hardware commands. */
 (function(root){
 'use strict';
 
+const scheduleCore=typeof module!=='undefined'&&module.exports?
+ require('./fox-ev-schedule-core.js'):root.FoxEVScheduleCore;
 const half = 1800000;
 const formatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/London',
@@ -95,6 +97,8 @@ function simulate(c, now) {
   }
 
   const {start, end} = windowFor(now);
+  const schedule=c.evSchedule===undefined?null:
+    scheduleCore.validate(c.evSchedule,c.evKw);
   const connect = eventAt(start, c.evConnect);
   const deadline = eventAt(start, c.evDeadline);
 
@@ -107,16 +111,22 @@ function simulate(c, now) {
     (c.batteryEfficiency / 100);
 
   let evLeft = evNeed;
+  let evDelivered = 0;
+  let gridExceeded = false;
   let batLeft = batteryNeed;
   const rows = [];
 
   for (let t = start; t < end; t += half) {
     const finish = Math.min(end, t + half);
-    const cuts = [
+    const events=[
+      connect,deadline,
+      ...(schedule||[]).flatMap(x=>[x.start,x.end])
+    ];
+    const cuts = [...new Set([
       t,
-      ...[connect, deadline].filter(x => x > t && x < finish),
+      ...events.filter(x => x > t && x < finish),
       finish
-    ].sort((a, b) => a - b);
+    ])].sort((a, b) => a - b);
 
     let ev = 0;
     let bat = 0;
@@ -127,9 +137,13 @@ function simulate(c, now) {
       const hours = (cuts[i + 1] - at) / 3600000;
       const available = Math.max(0, c.gridKw - c.houseKw);
 
-      const evKW = at >= connect && at < deadline
-        ? Math.min(c.evKw, available, evLeft / hours)
-        : 0;
+      // Supplied intervals are authoritative assumptions: never move
+      // or silently reduce EV power to make the battery plan look feasible.
+      const evKW = schedule
+        ? scheduleCore.powerAt(schedule,at)
+        : at >= connect && at < deadline
+          ? Math.min(c.evKw, available, evLeft / hours)
+          : 0;
 
       const batteryKW = Math.min(
         c.batteryKw,
@@ -140,7 +154,11 @@ function simulate(c, now) {
       const evKWh = evKW * hours;
       const batteryKWh = batteryKW * hours;
 
-      evLeft = Math.max(0, evLeft - evKWh);
+      if(at<deadline){
+        evLeft = Math.max(0, evLeft - evKWh);
+        evDelivered += evKWh;
+      }
+      if(c.houseKw+evKW>c.gridKw+1e-7)gridExceeded=true;
       batLeft = Math.max(0, batLeft - batteryKWh);
 
       ev += evKWh;
@@ -175,7 +193,9 @@ function simulate(c, now) {
     rows,
     evNeed,
     batteryNeed,
-    evDelivered: evNeed - evLeft,
+    evDelivered,
+    suppliedEVSchedule: schedule!==null,
+    gridExceeded,
     batDelivered: batteryNeed - batLeft,
     evShort: evLeft,
     batteryShort: batLeft,
