@@ -6,7 +6,65 @@ function setup(){
  if(!host)return;
  const panel=document.createElement('section');
  panel.className='panel';
+ panel.id='foxChargeScenarioPanel';
  panel.innerHTML=`
+ <style>
+ #foxChargeScenarioPanel { line-height:1.5 }
+ #foxChargeScenarioPanel label {
+   display:flex;flex-direction:column;gap:6px;margin:10px 0;
+   min-width:0;
+ }
+ #foxChargeScenarioPanel label:has(input[type="checkbox"]) {
+   flex-direction:row;align-items:flex-start;gap:10px;
+ }
+ #foxChargeScenarioPanel fieldset {
+   display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+   gap:12px;padding:16px;margin:16px 0;
+   border:1px solid #334861;border-radius:12px;min-width:0;
+ }
+ #foxChargeScenarioPanel input:not([type="checkbox"]),
+ #foxChargeScenarioPanel select {
+   box-sizing:border-box;width:100%;min-width:0;min-height:46px;
+   padding:10px;font-size:16px;border:1px solid #49617e;
+   border-radius:8px;background:#18283e;color:#edf3ff;
+   color-scheme:dark;
+ }
+ #foxChargeScenarioPanel input[type="checkbox"] {
+   width:22px;height:22px;flex-shrink:0;margin-top:2px;
+ }
+ #foxChargeScenarioPanel button { margin:6px 6px 6px 0 }
+ #foxChargeScenarioPanel [data-status] { margin-top:14px }
+
+ /* FOX_IPAD_DATE_FIX_451 */
+ #foxChargeScenarioPanel fieldset {
+   grid-template-columns:repeat(2,minmax(0,1fr));
+   align-items:start;
+ }
+ #foxChargeScenarioPanel fieldset > label {
+   min-width:0;overflow:hidden;
+ }
+ #foxChargeScenarioPanel input:not([type="checkbox"]),
+ #foxChargeScenarioPanel select {
+   display:block;width:100%;max-width:100%;min-width:0;
+ }
+ #foxChargeScenarioPanel input[type="datetime-local"] {
+   min-height:50px;overflow:hidden;
+ }
+ #foxChargeScenarioPanel input::-webkit-date-and-time-value {
+   text-align:left;min-width:0;
+ }
+ #foxChargeScenarioPanel fieldset > button {
+   justify-self:start;align-self:center;
+   min-height:44px;padding:10px 20px;
+ }
+ @media(max-width:600px) {
+   #foxChargeScenarioPanel fieldset {
+     grid-template-columns:minmax(0,1fr);
+   }
+ }
+
+ </style>
+
  <h3>Smart / Max Charge simulation</h3>
  <p>Supplied intervals are simulations, not a live Ohme schedule.
  Regular 23:30–05:30 cheap charging applies independently.</p>
@@ -43,6 +101,23 @@ function setup(){
    <label><input type="checkbox" data-cheap>
     Confirmed extra Smart cheap window (half-hour boundaries)</label>
    <button type="button" data-remove>Remove</button>`;
+  // Editable example times use the displayed GMT offset.
+  // Creating a row does not apply a charging scenario.
+  const next=Math.ceil(Date.now()/1800000)*1800000;
+  row.querySelector('[data-start]').value=
+   new Date(next).toISOString().slice(0,16);
+  row.querySelector('[data-end]').value=
+   new Date(next+1800000).toISOString().slice(0,16);
+  // FOX_AUTO_END_452
+  row.querySelector('[data-start]').addEventListener('change',()=>{
+   const value=row.querySelector('[data-start]').value;
+   if(!value)return;
+   // Add 30 minutes to the entered clock time, including date rollover.
+   const at=Date.parse(value+'Z');
+   if(Number.isFinite(at))
+    row.querySelector('[data-end]').value=
+     new Date(at+1800000).toISOString().slice(0,16);
+  });
   row.querySelector('[data-remove]').onclick=()=>row.remove();
   rows.append(row);
  }
@@ -91,6 +166,10 @@ function setup(){
  };
  panel.querySelector('[data-clear]').onclick=()=>{
   delete window.foxChargingScenarioV420;
+  rows.replaceChildren();
+  add();
+  panel.querySelector('[data-mode]').value='unknown';
+  panel.querySelector('[data-confirm]').checked=false;
   refresh();
   status.textContent='Scenario cleared. Overnight EV estimates apply again.';
  };

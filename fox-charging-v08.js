@@ -283,5 +283,23 @@ solarPanel.append(compareButton,targetOutput);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 window.foxChargingPlannerV06={refresh:render};
-window.foxSolarAwareRefreshV08=solarCard;
+// FOX_RESEARCH_REFRESH_453
+window.foxSolarAwareRefreshV08=function(){
+ solarCard();
+ const output=document.getElementById('foxTargetResultV360');
+ if(!output)return;
+ renderTargetResearchV380(null);
+ try{
+  const night=window.FoxOvernightCore.windowFor(Date.now());
+  const input=window.foxTargetInputsV360?.(night);
+  output.textContent=input?.available?
+   'Fresh forecast inputs available. Tap Compare next-day overnight targets to calculate a new research comparison. Active overnight target remains 100%.':
+   'Comparison unavailable: '+
+    (input?.reason||'Target inputs unavailable')+
+    '. Active overnight target remains 100%.';
+ }catch(error){
+  output.textContent='Comparison unavailable: '+error.message+
+   '. Active overnight target remains 100%.';
+ }
+};
 })();
