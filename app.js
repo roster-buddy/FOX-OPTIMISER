@@ -295,6 +295,7 @@ window.foxReplanChargingV430=function(){
  const output=document.getElementById('foxTargetResultV360');
  if(output)output.textContent='Scenario changed. Run research comparison again.';
  plan();
+ window.foxSolarAwareRefreshV08?.();
 };
 function chargingPolicyV420(){
  let cfg={};
@@ -493,6 +494,7 @@ defaults to zero.</p>`;
     localStorage.setItem('fox-wear-p',String(financialWearP));
    }catch{}
    plan();
+   window.foxSolarAwareRefreshV08?.();
   });
  }
  const f=window.FoxFinanceCore.compare(base,opt,{
