@@ -1,0 +1,72 @@
+name: Fox Optimiser checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  self-tests:
+    name: JavaScript syntax and self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check JavaScript and run every self-test
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          failures = []
+          scripts = sorted(Path(".").glob("*.js"))
+          tests = sorted(Path(".").glob("*selftest.js"))
+          if not tests:
+              raise SystemExit("No self-test files found")
+
+          def check(label, command):
+              print(f"::group::{label}", flush=True)
+              try:
+                  result = subprocess.run(command, timeout=60)
+                  if result.returncode:
+                      failures.append(label)
+              except subprocess.TimeoutExpired:
+                  print("Timed out after 60 seconds", flush=True)
+                  failures.append(label)
+              finally:
+                  print("::endgroup::", flush=True)
+
+          for script in scripts:
+              check(f"Syntax: {script.name}", ["node", "--check", str(script)])
+          for test in tests:
+              check(f"Test: {test.name}", ["node", str(test)])
+
+          summary = (
+              f"Checked {len(scripts)} JavaScript files and ran {len(tests)} self-test files.\n\n"
+              + ("All checks passed.\n" if not failures else
+                 "Failed checks:\n" + "".join(f"- {name}\n" for name in failures))
+          )
+          print(summary, flush=True)
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as report:
+                  report.write(summary)
+          raise SystemExit(1 if failures else 0)
+          PY
