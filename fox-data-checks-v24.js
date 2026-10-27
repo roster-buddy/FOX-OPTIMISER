@@ -15,7 +15,16 @@ function gate(now,data,requestedKW){
   if(x.value<0||(key==='soc'&&x.value>100))
    return {kw:0,reason:'Out-of-range '+key};
  }
- return {kw:Math.min(requestedKW,3.5),reason:'Data checks passed'};
+ const solarSurplus=Math.max(
+  0,data.solarKW.value-data.homeKW.value
+ );
+ const headroom=Math.max(0,3.5-solarSurplus);
+ return {
+  kw:Math.min(requestedKW,headroom),
+  reason:headroom===0
+   ?'No net grid export headroom'
+   :'Data checks passed'
+ };
 }
 
 function cases(){
@@ -57,7 +66,7 @@ more than two minutes old. This provisional threshold is for testing.</p>
 <p>Passing these checks alone does not authorise export. Reserve,
 price, inverter and net grid power checks are still required.
 This gate is not yet integrated into the replanning simulation or
-a live controller. The 3.5 kW request cap alone cannot enforce the
+a live controller. The solar-aware recommendation cap cannot physically enforce the
 total instantaneous grid export limit.</p>`;
 (document.querySelector('main')||document.body).append(section);
 section.querySelector('button').onclick=()=>{
