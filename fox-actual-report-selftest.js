@@ -44,3 +44,14 @@ input.streams.evGridCharge[0].value=1;
 input.streams.evGridCharge[1].value=0;
 r=report.build(day,input,w.end);assert.match(r.importCheck.reason,/exceeds/);
 console.log('RECONCILIATION PASS: interval conflicts blocked; independent meter totals retained');
+
+assert.equal(report.csv(report.build(day,{},w.end)),null);
+const exported=report.csv(report.build(day,input,w.end));
+assert.match(exported,/Period start UTC/);assert.match(exported,/2026-10-25T23:30:00.000Z/);
+assert(exported.includes('Europe/London'));
+assert(exported.includes('"savings","",""'),'Unavailable values must stay blank');
+const dangerous=report.build(day,input,w.end);dangerous.savings.reason='=SUM(1,2)';
+assert(report.csv(dangerous).includes("\"'=SUM(1,2)\""));
+console.log('ACTUAL CSV PASS: exact period, blank missing values and formula text protection');
+
+assert.equal(exported.split('\r\n').length,13);
