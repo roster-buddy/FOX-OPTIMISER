@@ -1,7 +1,7 @@
 /* Fox Optimiser v2.2 – historical Agile backtesting, night feasibility + wear, read only. */
 (function (root) {
   'use strict';
-  const VERSION = '2.2';
+  const VERSION = '2.2.1';
   const TOL = 1e-7;
   const GB = 'Europe/London';
   const product = 'AGILE-OUTGOING-19-05-13';
@@ -307,7 +307,7 @@ const api={version:VERSION,slotsFor,dayShift,dateGB,historicalSolar,solarAudit,e
     const main=document.querySelector('main');if(!main)return;
     const panel=el('section');panel.id='foxHistoricalBacktestV22';panel.className='panel';
     panel.style.cssText='margin:18px 0;padding:18px;border:1px solid #53769d;border-radius:14px';
-    panel.append(el('h3','Historical backtesting · v2.2 — solar audit + variable EV charging'));
+    panel.append(el('h3','Historical backtesting · v2.2.1 — solar audit + variable EV charging'));
     const intro=el('p','READ-ONLY RESEARCH · Real archived Octopus Outgoing Agile export prices and Open-Meteo historical solar irradiance; synthetic 300 W household demand, user-selected hypothetical EV charging nights and assumed 100% battery SOC at 05:30 each day. Historical weather reconstructed after the fact is NOT a historical day-ahead forecast. Results are hindsight illustrations, not real household earnings.');
     intro.className='note';panel.append(intro);
     const privacy=el('p','Privacy: On running the test, your locally saved solar-site coordinates are sent directly to Open-Meteo for archived irradiance only. They are not added to GitHub source files or shared with Octopus.');privacy.className='note';panel.append(privacy);
@@ -394,7 +394,7 @@ evForDate(endField.value,evSelect.value,night.evKWh,customInput.value);
         const allDays=[],allSlots=[];
         for(let i=0;i<dCount;i++){const d=dayShift(first,i),s=slotsFor(d);allDays.push({date:d,slots:s});allSlots.push(...s);}
         status.textContent='Fetching actual Octopus half-hourly export prices and archived solar irradiance…';
-        const [rates,solar]=await Promise.all([fetchRates(allSlots),fetchArchive(c,first,end,allSlots)]);
+        const [rates,pvAudit]=await Promise.all([fetchRates(allSlots),fetchArchive(c,first,end,allSlots)]); const solar=pvAudit.solar;
         if(rates.prices.length!==allSlots.length||solar.length!==allSlots.length)throw Error('Historical source lengths do not match.');
         status.textContent='Analysing '+dCount+' days with real prices and weather-based solar estimates…';
         const results=[],bad=[];

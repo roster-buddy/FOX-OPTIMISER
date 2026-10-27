@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const m=require('./fox-backtest-v22.js');
 const c={capacity:10.24,load:.3,chargeKW:5,dischargeKW:5,exportKW:3.5,pv:2.01,inverterKW:1.5,pr:.82,eff:.95,importP:28,nightP:3.33,min:5,target:20,soc:100,derate:0,tilt:35,bearing:110,scenario:'low'};
 const n={importKW:8.3,evKWh:13,evKW:6.6,nightHomeKW:.3,wearP:5};
-assert.equal(m.version,'2.2');
+assert.equal(m.version,'2.2.1');
 for(const [date,slots] of [['2026-10-24',14],['2026-10-25',12],['2026-03-28',10]]){
  assert.equal(m.overnightSlotsFor(date).length,slots);
  for(const evKWh of [0,7,13,26]){
