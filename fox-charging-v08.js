@@ -129,7 +129,59 @@ function renderTargetResearchV380(result) {
     (x.checkpoint?' · 19:00 checkpoint':'')
   ])
  );
+ const ledgerPanels=[];
+ if(result.ledger){
+  const l=result.ledger;
+  const cash=x=>(x<0?'−£':'£')+Math.abs(x).toFixed(2);
+  const kwh=x=>x.toFixed(2)+' kWh';
+  const card=document.createElement('section');
+  card.className='panel';
+  card.append(
+   make('h3','Your electricity costs, exports and savings · forecast'),
+   make('p','Selected research scenario only. '+uk.format(new Date(l.start))+
+    ' to '+uk.format(new Date(l.end))+
+    ' Europe/London. The 23:00–23:30 tail is excluded. These are estimates, not meter readings or a bill.'),
+   make('h4','Charging and export P&L'),
+   table(['Item','Energy','Cost / earnings'],[
+    ['Overnight battery grid charging',kwh(l.nightBattery),cash(l.nightBatteryCost)+' cost'],
+    ['Other battery grid charging',kwh(l.dayBattery),cash(l.dayBatteryCost)+' cost'],
+    ['EV grid charging, whole forecast period',kwh(l.ev.grid),cash(l.ev.gridCost)+' cost'],
+    ['Direct solar export',kwh(l.solarExport),cash(l.solarRevenue)+' earnings'],
+    ['Battery export (including stored solar)',kwh(l.batteryExport),cash(l.batteryRevenue)+' earnings'],
+    ['Total export earnings',kwh(l.solarExport+l.batteryExport),cash(l.exportRevenue)],
+    ['Net balance: exports minus battery and EV charging','',cash(l.cashBalance)]
+   ]),
+   make('p','Household grid purchases are separate: '+kwh(l.house.grid)+
+    ', costing '+cash(l.house.gridCost)+'. A negative net balance means charging costs exceed export earnings.'),
+   make('h4','House and EV: energy supplied and savings'),
+   table(['Item','House','EV'],[
+    ['Direct solar used',kwh(l.house.solar),kwh(l.ev.solar)],
+    ['Battery energy used',kwh(l.house.battery),kwh(l.ev.battery)],
+    ['Grid energy used',kwh(l.house.grid),kwh(l.ev.grid)],
+    ['Cost if all demand came from grid',cash(l.house.gridOnlyCost),cash(l.ev.gridOnlyCost)],
+    ['Grid purchases + allocated battery energy cost',cash(l.house.modelledSupplyCost),cash(l.ev.modelledSupplyCost)],
+    ['Estimated saving',cash(l.house.saving),cash(l.ev.saving)]
+   ]),
+   make('p','Grid-only costs use the entered tariff at the time of use. Solar serves the house before the EV in this allocation. Direct solar has zero purchased-electricity cost. EV demand is mains energy, including the modelled charging losses.'),
+   make('h4','Combined estimated benefit'),
+   table(['Component','Amount'],[
+    ['Export earnings less allocated battery export cost',cash(l.exportMargin)],
+    ['Household saving',cash(l.house.saving)],
+    ['EV saving',cash(l.ev.saving)],
+    ['Total benefit before assumed wear',cash(l.benefit)],
+    ['Assumed battery wear',cash(l.wear)],
+    ['Total benefit after assumed wear',cash(l.benefitAfterWear)]
+   ]),
+   make('p','Battery charging cost is allocated once between house use, EV use, exports and energy still stored, including conversion losses. Opening stored energy is valued at the entered replacement charging rate: '+
+    kwh(l.openingStored)+' / '+cash(l.openingCost)+
+    '. Closing stored energy: '+kwh(l.closingStored)+' / '+cash(l.closingCost)+
+    '. These carried values are not extra grid purchases. Stored solar dilutes the weighted battery energy cost.'),
+   make('p','The charging/export net balance and avoided-import benefit are different views: do not add them together. Rates remain entered assumptions. Overnight charging uses the entered flat cheap rate. Equipment costs and measured-history validation are excluded.')
+  );
+  ledgerPanels.push(card);
+ }
  panel.replaceChildren(
+  ...ledgerPanels,
   make('h4','Overnight target comparison · research'),
   make('p','Snapshot only. Re-run after prices, weather or assumptions change. '+
    'Only feasible tested targets appear. Baseline: '+
@@ -204,7 +256,17 @@ function compareTargetsV360(){
     'and an assumed terminal refill to the same full battery. '+
     'EV and overnight household costs are common to these candidates. '+
     'Measured-history validation is not yet available.';
-   renderTargetResearchV380({...result,capacity:input.config.capacity});
+   const overnight=window.FoxOvernightCore.simulate({
+    ...cfg,
+    ...(window.foxChargingScenarioV420?
+     {evSchedule:window.foxChargingScenarioV420.evSchedule}:{}),
+    capacity:input.config.capacity,soc:projection.soc,target:best.target
+   },now);
+   const ledger=window.FoxCostLedger.summarise(
+    input.config,best.result.steps,overnight,
+    input.config.capacity*projection.soc/100,cfg.batteryEfficiency/100
+   );
+   renderTargetResearchV380({...result,capacity:input.config.capacity,ledger});
   }catch(error){
    output.textContent='Comparison unavailable: '+error.message+
     '. Active overnight target remains 100%.\nLast comparison attempt: '+comparisonTimeV456();
