@@ -1,4 +1,10 @@
-'use strict';
+ 'use strict';
+let financialWearP=0;
+try{
+ const v=Number(localStorage.getItem('fox-wear-p')||0);
+ if(Number.isFinite(v)&&v>=0&&v<=100)financialWearP=v;
+}catch{}
+
 const DEFAULTS={soc:80,capacity:9,reserve:20,exportKw:3.5,homeDay:7,solarDay:6,peakImport:28,cheapImport:7,efficiency:90,tariff:'E-1R-AGILE-OUTGOING-19-05-13-E'};
 const $=id=>document.getElementById(id);
 let settings={...DEFAULTS},prices=[],priceSource='none',lastPlan=[];
@@ -268,6 +274,7 @@ function simulateV2(slots, exports) {
   let valid = true;
   let reached19 = false;
   const output = [];
+  let importCost=0,revenue=0,dischargeStored=0;
 
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
@@ -288,6 +295,7 @@ function simulateV2(slots, exports) {
       );
       energy += charge;
       value -= (dayLoad + charge / efficiency) * s.cheapImport;
+      importCost+=(dayLoad+charge/efficiency)*s.cheapImport/100;
       action = charge > .01 ? "Cheap charge" : "Hold charged";
     } else {
       const f=window.FoxEnergyCore.flow({
@@ -300,6 +308,9 @@ function simulateV2(slots, exports) {
         h<19?Math.max(0,exports[i]||0):0,
         cap*V2.eveningTarget);
       energy=f.end;
+      importCost+=f.grid*s.peakImport/100;
+      revenue+=(f.natural+f.forced)*slot.rate/100;
+      dischargeStored+=(f.batteryHome+f.forced)/efficiency;
       exported=f.forced;
       value-=f.grid*s.peakImport;
       value+=(f.natural+exported)*Math.max(0,slot.rate);
@@ -328,7 +339,16 @@ function simulateV2(slots, exports) {
     });
   }
 
-  return { output, value, valid, reached19 };
+  const financial=window.FoxFinanceCore.settle({
+    importCost,revenue,end:energy,dischargeStored
+  },{
+    capacity:cap,eff:efficiency,
+    refillP:s.cheapImport,wearP:financialWearP
+  });
+  return {
+    output,value,valid,reached19,end:energy,
+    importCost,revenue,dischargeStored,financial
+  };
 }
 
 function plan() {
@@ -340,6 +360,7 @@ function plan() {
   const slots = prices.slice().sort((a,b) => a.start - b.start);
   const exports = {};
   let baseline = simulateV2(slots, exports);
+  const selfUse=baseline;
 
   // Optimise highest-value export opportunities, but only accept
   // changes that improve estimated net financial value.
@@ -363,7 +384,7 @@ function plan() {
 
     if (trial.valid &&
         actual > .02 &&
-        trial.value > baseline.value + .01) {
+        trial.financial.cost < baseline.financial.cost - .0001) {
       exports[candidate.i] = actual;
       baseline = simulateV2(slots, exports);
     }
@@ -371,6 +392,7 @@ function plan() {
 
   lastPlan = baseline.output;
   render();
+  renderFinancialComparison(selfUse,baseline);
 
   const status = document.getElementById("priceStatus");
   if (status) {
@@ -385,7 +407,58 @@ function plan() {
       slots.length + " half-hours" + note;
   }
 }
-function renderEmpty(){$('schedule').textContent='No prices loaded. Tap “Load live Octopus prices” or use clearly labelled sample data.';$('priceChart').getContext('2d').clearRect(0,0,1000,320);$('exportDisplay').textContent='—';$('revenueDisplay').textContent='No forecast yet';$('nextAction').textContent='Waiting';$('nextActionTime').textContent='Load prices to begin';$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`}
+
+function renderFinancialComparison(base,opt){
+ let panel=document.getElementById('financialComparison');
+ if(!panel){
+  panel=document.createElement('section');
+  panel.id='financialComparison';
+  panel.className='panel';
+  panel.innerHTML=`
+<h3>Estimated benefit compared with self-use</h3>
+<label>Assumed wear (p per battery kWh discharged)
+<input id="financialWear" type="number" min="0" max="100" step="0.5">
+</label>
+<div id="financialResult" aria-live="polite"></div>
+<p class="note">Available-price horizon only, plus an assumed refill
+to 100% at the entered cheap rate. Charging costs within the horizon
+are already included; only the remaining shortfall is added.
+Both strategies start with the same manual SOC. Outside-horizon
+household use, EV charging feasibility, Charge Pack credits and
+standing charges are excluded. This is a planning estimate, not
+measured profit. Wear is an optional sensitivity assumption and
+defaults to zero.</p>`;
+  document.querySelector('.metrics')
+   .insertAdjacentElement('afterend',panel);
+  const input=panel.querySelector('input');
+  input.value=financialWearP;
+  input.addEventListener('change',()=>{
+   if(!input.value.trim()||!input.checkValidity())return;
+   financialWearP=Number(input.value);
+   try{
+    localStorage.setItem('fox-wear-p',String(financialWearP));
+   }catch{}
+   plan();
+  });
+ }
+ const f=window.FoxFinanceCore.compare(base,opt,{
+  capacity:settings.capacity,
+  eff:Math.max(.5,Math.min(1,settings.efficiency/100)),
+  refillP:settings.cheapImport,wearP:financialWearP
+ });
+ const money=x=>'£'+x.toFixed(2);
+ document.getElementById('financialResult').textContent=
+  'Gross export revenue, all modelled solar + battery: '+
+  money(f.opt.revenue)+
+  '. Import cost within horizon: '+money(f.opt.importCost)+
+  '. Remaining assumed refill: '+money(f.opt.refillCost)+
+  '. Improvement before additional wear: '+money(f.gross)+
+  '. Additional assumed wear: '+money(f.wearCost)+
+  '. Estimated improvement after additional wear: '+money(f.net)+
+  (!opt.reached19?' — 19:00 checkpoint unavailable.':
+   !opt.valid?' — WARNING: reserve forecast fails.':'');
+}
+function renderEmpty(){const f=document.getElementById('financialResult');if(f)f.textContent='No price data loaded; financial comparison unavailable.';$('schedule').textContent='No prices loaded. Tap “Load live Octopus prices” or use clearly labelled sample data.';$('priceChart').getContext('2d').clearRect(0,0,1000,320);$('exportDisplay').textContent='—';$('revenueDisplay').textContent='No forecast yet';$('nextAction').textContent='Waiting';$('nextActionTime').textContent='Load prices to begin';$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`}
 function render(){const exportKwh=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh:0),0);const revenue=lastPlan.reduce((a,x)=>a+(x.action==='Export'?x.kwh*Math.max(0,x.rate):0),0);$('socDisplay').textContent=`${settings.soc}%`;$('batteryKwh').textContent=`${(settings.capacity*settings.soc/100).toFixed(1)} kWh estimated`;$('reserveDisplay').textContent=`20% at 19:00 · 5% evening minimum`;$('exportDisplay').textContent=`${exportKwh.toFixed(2)} kWh`;$('revenueDisplay').textContent=`${formatMoney(revenue)} gross export revenue`;
 const next=lastPlan.find(x=>x.action==='Export');$('nextAction').textContent=next?next.action:'Hold battery';$('nextActionTime').textContent=next?`${date(next.start)} ${time(next.start)}`:'No financially attractive export slots';$('chartNote').textContent=priceSource==='live'?'Live Octopus public rates · future half-hours only.':'SAMPLE PRICES — synthetic data, not actual Octopus rates.';
 $('schedule').replaceChildren(...lastPlan.map(x=>{const el=document.createElement('div');el.className=`slot ${x.action==='Export'?'export':x.action==='Cheap charge'?'charge':''}`;const t=document.createElement('span');t.className='time';t.textContent=`${date(x.start)} ${time(x.start)}`;const a=document.createElement('b');a.textContent=x.action==='Export'?`Export ${x.kwh.toFixed(2)} kWh`:x.action==='Cheap charge'?`Charge ${x.kwh.toFixed(2)} kWh`:'Hold / self-use';const p=document.createElement('span');p.className='price';p.textContent=`${x.rate.toFixed(1)}p`;el.append(t,a,p);return el}));drawChart()}

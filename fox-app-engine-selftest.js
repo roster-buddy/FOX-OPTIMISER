@@ -12,7 +12,8 @@ const engine=source.slice(start,end);
 function simulate({soc=100,home=0,solar=0,h=12,
                    minute=0,cheap=false,request=0}={}){
  const context={
-  window:{FoxEnergyCore:require('./fox-energy-core.js')},
+  financialWearP:0,
+  window:{FoxEnergyCore:require('./fox-energy-core.js'),FoxFinanceCore:require('./fox-finance-core.js')},
   settings:{
    capacity:10,soc,efficiency:90,
    cheapImport:7,peakImport:28

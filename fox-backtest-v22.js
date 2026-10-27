@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const energyCore=typeof module!=='undefined'&&module.exports?require('./fox-energy-core.js'):window.FoxEnergyCore;
+  const financeCore=typeof module!=='undefined'&&module.exports?require('./fox-finance-core.js'):window.FoxFinanceCore;
   const VERSION = '2.2.1';
   const TOL = 1e-7;
   const GB = 'Europe/London';
@@ -147,10 +148,17 @@
     const base=simulate(c,slots,solar,prices,false);
     const optimised=simulate(c,slots,solar,prices,true);
     if(!base.ok||!optimised.ok)return {ok:false,reason:optimised.reason||base.reason};
-    const terminalCredit=c.nightP/(100*c.eff);
-    const baselineCost=-base.score+(c.capacity-base.end)*terminalCredit;
-    const optimisedCost=-optimised.score+(c.capacity-optimised.end)*terminalCredit;
-    const improvement=baselineCost-optimisedCost;
+    const pack=p=>({
+      importCost:p.grid*c.importP/100,revenue:p.revenue,
+      end:p.end,
+      dischargeStored:(p.audit.batteryHome+p.audit.forced)/c.eff
+    });
+    const financial=financeCore.compare(pack(base),pack(optimised),{
+      capacity:c.capacity,eff:c.eff,refillP:c.nightP,wearP:0
+    });
+    const baselineCost=financial.base.beforeWear;
+    const optimisedCost=financial.opt.beforeWear;
+    const improvement=financial.gross;
     return {ok:true,base,optimised,baselineCost,optimisedCost,improvement};
   }
   /* Night interval 23:30 local on the historical date through 05:30 next day.
@@ -221,11 +229,17 @@ function overnightCharge(c,day,eveningEnd,settings){
 function adjustedCompare(r,c,day,settings){
   if(!r.ok)return {ok:false,reason:r.reason};
   const base=overnightCharge(c,day,r.base.end,settings),opt=overnightCharge(c,day,r.optimised.end,settings);
-  const wearStoredBase=(r.base.audit.batteryHome+r.base.audit.forced)/c.eff;
-  const wearStoredOpt=(r.optimised.audit.batteryHome+r.optimised.audit.forced)/c.eff;
-  const extraBatteryWear=Math.max(0,wearStoredOpt-wearStoredBase);
-  const wearCost=extraBatteryWear*settings.wearP/100;
-  if(!Number.isFinite(settings.wearP)||settings.wearP<0||settings.wearP>100)throw Error('Check battery wear sensitivity rate');
+  const pack=p=>({
+    importCost:p.grid*c.importP/100,revenue:p.revenue,
+    end:p.end,
+    dischargeStored:(p.audit.batteryHome+p.audit.forced)/c.eff
+  });
+  const financial=financeCore.compare(pack(r.base),pack(r.optimised),{
+    capacity:c.capacity,eff:c.eff,
+    refillP:c.nightP,wearP:settings.wearP
+  });
+  const extraBatteryWear=financial.extraDischarge;
+  const wearCost=financial.wearCost;
   const ok=base.ok&&opt.ok;
   // v2.0 compare ALREADY costs refill electricity at the overnight tariff.
   // Only EV and overnight household are newly included in the absolute cost.
