@@ -1,0 +1,66 @@
+/* Actual accounting only. Future authenticated adapters must run outside this public app. */
+(function(root){
+'use strict';
+const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function parts(t){return Object.fromEntries(fmt.formatToParts(new Date(t)).map(p=>[p.type,p.value]));}
+function boundary(day){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('Choose a valid end date');
+ const [y,m,d]=day.split('-').map(Number);
+ let t=Date.UTC(y,m-1,d,23,30);
+ if(new Date(t).toISOString().slice(0,10)!==day)throw Error('Choose a valid end date');
+ for(let i=0;i<3;i++){
+  const p=parts(t);const offset=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-t;
+  t=Date.UTC(y,m-1,d,23,30)-offset;
+ }
+ return t;
+}
+function previousDay(day){return new Date(Date.parse(day+'T12:00:00Z')-86400000).toISOString().slice(0,10);}
+function windowFor(endDay){return {start:boundary(previousDay(endDay)),end:boundary(endDay)};}
+function latestEndDay(now){const p=parts(now);let day=p.year+'-'+p.month+'-'+p.day;return now>=boundary(day)?day:previousDay(day);}
+// Each metric needs complete, consecutive measured intervals. Missing is never zero.
+function total(records,window,now){
+ if(window.end>now)return null;
+ const rows=(records||[]).filter(r=>r.start>=window.start&&r.start<window.end).sort((a,b)=>a.start-b.start);
+ let cursor=window.start,sum=0;
+ for(const r of rows){
+  if(r.start!==cursor||!Number.isFinite(r.end)||r.end<=r.start||r.end>window.end||!Number.isFinite(r.value)||r.measured!==true)return null;
+  cursor=r.end;sum+=r.value;
+ }
+ return cursor===window.end?sum:null;
+}
+const api={windowFor,latestEndDay,total};
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
+else {root.FoxActualCosts=api;setup();}
+function setup(){
+ const init=()=>{
+  const host=document.querySelector('main');if(!host)return;
+  const panel=document.createElement('section');panel.className='panel';panel.id='foxActualCosts';
+  panel.innerHTML=`<h2>Your actual daily electricity costs</h2>
+  <p>Recorded energy only · 23:30 to 23:30 · Europe/London. No forecasts or assumed battery refill.</p>
+  <label>Accounting day ending on <input type="date" id="foxActualEnd"></label>
+  <p id="foxActualPeriod" aria-live="polite"></p>
+  <h3>Connections</h3>
+  <ul><li>Octopus: not connected — recorded grid import, export and applicable tariffs.</li>
+  <li>Fox ESS: not connected — solar generation, battery charging/discharging and household energy.</li>
+  <li>Ohme / charger meter: not connected — recorded EV charging.</li></ul>
+  <p>Waiting for your hardware and API setup. Live collection is disabled. No API keys are requested or stored here.</p>
+  <p>Confirmed import rates including VAT: daytime 23.2995p/kWh; regular overnight 3.4965p/kWh (23:30–05:30). Historical costs require the tariff applicable to each recorded interval, including confirmed Smart charging rates. Your current export rate has not been configured; Agile prices elsewhere are a planning scenario.</p>
+  <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
+  <h3>House and EV savings</h3><p>Battery / solar supplied to the house: Data unavailable.<br>Battery / solar supplied to the EV: Data unavailable.<br>Equivalent grid cost: Data unavailable.<br>Allocated actual supply cost: Data unavailable.<br>Savings: Data unavailable.</p>
+  <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
+  <p>Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>`;
+  host.prepend(panel);
+  const input=panel.querySelector('#foxActualEnd');input.value=latestEndDay(Date.now());input.max=input.value;
+  const update=()=>{
+   const output=panel.querySelector('#foxActualPeriod');
+   try{const w=windowFor(input.value);const pretty=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    output.textContent=pretty.format(new Date(w.start))+' → '+pretty.format(new Date(w.end))+' · '+((w.end-w.start)/3600000)+' hours. '+(w.end>Date.now()?'Period not complete.':'No recorded readings connected.');
+   }catch(e){output.textContent=e.message;}
+  };
+  const items=['Battery grid charging · overnight','Battery grid charging · rest of day','EV grid charging','Household grid purchases','Direct solar export','Battery export','Total metered export','Export earnings less battery and EV charging','Standing charge'];
+  for(const item of items){const row=document.createElement('tr');for(const label of [item,'Data unavailable','Data unavailable']){const cell=document.createElement('td');cell.textContent=label;cell.style.padding='10px 6px';row.append(cell);}panel.querySelector('#foxActualRows').append(row);}
+  input.addEventListener('change',update);update();
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+}
+})(typeof window!=='undefined'?window:globalThis);
