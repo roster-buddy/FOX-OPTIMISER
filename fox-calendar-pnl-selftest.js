@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');
+const api=require('./fox-calendar-pnl.js');
+const report=(imports,exports)=>({gridImport:{cost:imports},gridExport:{cost:exports},gridBalance:{available:true,value:imports-exports}});
+assert.equal(api.dayResult(null),null);
+assert.equal(api.dayResult({gridBalance:{available:false,value:0}}),null);
+assert.equal(api.dayResult(report(2,5)),3);
+assert.equal(api.dayResult(report(5,2)),-3);
+assert.equal(api.dayResult(report(2,2)),0);
+const reports=new Map([['2026-10-25',report(2,5)],['2026-10-26',report(7,2)],['2026-09-30',report(0,100)]]);
+let m=api.monthSummary(reports,2026,9);
+assert.equal(m.net,-2);assert.equal(m.imports,9);assert.equal(m.exports,7);assert.equal(m.count,2);assert.equal(m.complete,false);
+assert.equal(api.monthSummary(new Map(),2026,9).net,null);
+assert.equal(api.monthSummary(new Map(),2028,1).days,29);
+for(let d=1;d<=31;d++)reports.set('2026-10-'+String(d).padStart(2,'0'),report(1,2));
+m=api.monthSummary(reports,2026,9);assert(m.complete);assert.equal(m.net,31);
+console.log('CALENDAR PNL PASS: export less all import, profit/loss/zero, partial totals and month boundaries');
