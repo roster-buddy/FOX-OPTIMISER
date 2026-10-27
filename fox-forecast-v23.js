@@ -1,6 +1,7 @@
 /* Synthetic research only. No network or hardware commands. */
 (function(){
 'use strict';
+const energyCore=typeof module!=='undefined'&&module.exports?require('./fox-energy-core.js'):window.FoxEnergyCore;
 
 function run(mode,solarFactor,loadFactor,control=null){
  const trace=[];
@@ -14,23 +15,9 @@ function run(mode,solarFactor,loadFactor,control=null){
  let shortfallIntervals=0,exportDuringShortfall=0;
 
  function step(e,pv,h,request){
-  const solarHome=Math.min(pv,h);
-  const deficit=h-solarHome,surplus=pv-solarHome;
-  const batteryHome=Math.min(deficit,2.5*eff,Math.max(0,(e-min)*eff));
-  const afterHome=e-batteryHome/eff;
-  const charge=Math.min(surplus,2.5,Math.max(0,(capacity-afterHome)/eff));
-  const natural=Math.min(1.75,surplus-charge);
-  const curtail=surplus-charge-natural;
-  const forced=charge>1e-9?0:Math.min(
-   request,1.75-natural,
-   Math.max(0,(2.5-batteryHome/eff)*eff),
-   Math.max(0,(afterHome-min)*eff)
-  );
-  return {
-   end:afterHome+charge*eff-forced/eff,
-   batteryHome,charge,natural,curtail,forced,
-   grid:deficit-batteryHome,solarHome
-  };
+  return energyCore.flow({
+   capacity,eff,min,chargeKW:5,dischargeKW:5,exportKW:3.5
+  },e,pv,h,request);
  }
 
  function plan(start,e,pv,home){

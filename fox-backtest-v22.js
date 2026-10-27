@@ -1,6 +1,7 @@
 /* Fox Optimiser v2.2 – historical Agile backtesting, night feasibility + wear, read only. */
 (function (root) {
   'use strict';
+  const energyCore=typeof module!=='undefined'&&module.exports?require('./fox-energy-core.js'):window.FoxEnergyCore;
   const VERSION = '2.2.1';
   const TOL = 1e-7;
   const GB = 'Europe/London';
@@ -99,18 +100,13 @@
       const clock=slots[i].clock,solarKWh=solar[i],house=demand(c,clock),p=prices[i];
       const next=new Map();
       for(const [oldKey,st] of states){
-        const solarHome=Math.min(solarKWh,house),deficit=house-solarHome,surplus=solarKWh-solarHome;
-        const batteryHome=Math.min(deficit,c.dischargeKW*.5*c.eff,Math.max(0,(st.energy-min)*c.eff));
-        const grid=deficit-batteryHome;
-        const afterHome=st.energy-batteryHome/c.eff;
-        const pvToBattery=Math.min(surplus,c.chargeKW*.5,Math.max(0,(c.capacity-afterHome)/c.eff));
-        const solarStored=pvToBattery*c.eff,afterSolar=afterHome+solarStored;
-        const naturalExport=Math.min(c.exportKW*.5,surplus-pvToBattery);
-        const curtailed=Math.max(0,surplus-pvToBattery-naturalExport);
-        const availableDischarge=Math.max(0,c.dischargeKW*.5-batteryHome/c.eff)*c.eff;
-        // Do not model charging and forced discharging in the same interval.
-        const maxForced=(allowForced&&clock<19&&p>0&&solarStored<TOL)
-          ?Math.min(Math.max(0,c.exportKW*.5-naturalExport),availableDischarge,Math.max(0,(afterSolar-min)*c.eff)):0;
+        const f=energyCore.flow(
+          {...c,min},st.energy,solarKWh,house,
+          allowForced&&clock<19&&p>0?Number.MAX_VALUE:0
+        );
+        const {solarHome,batteryHome,grid,solarStored,afterSolar}=f;
+        const naturalExport=f.natural;
+        const curtailed=f.curtail,maxForced=f.forced;
         const n=Math.ceil(maxForced/actionStep);
         for(let j=0;j<=n;j++){
           const forced=Math.min(maxForced,j*actionStep);

@@ -290,57 +290,22 @@ function simulateV2(slots, exports) {
       value -= (dayLoad + charge / efficiency) * s.cheapImport;
       action = charge > .01 ? "Cheap charge" : "Hold charged";
     } else {
-      // Self-use down to 5%; excess solar can charge the battery.
-      const solarCharge = Math.min(
-        cap - energy,
-        surplus * efficiency,
-        V2.estimatedChargeKw * .5 * efficiency
-      );
-      energy += solarCharge;
-      const usable = Math.max(0, energy - cap * V2.eveningMinimum);
-      const supplied = Math.min(
-        deficit,
-        usable * efficiency,
-        V2.batteryDischargeKw * .5 * efficiency
-      );
-      energy -= supplied / efficiency;
-      value -= (deficit - supplied) * s.peakImport;
+      const f=window.FoxEnergyCore.flow({
+        capacity:cap,eff:efficiency,
+        min:cap*V2.eveningMinimum,
+        chargeKW:V2.estimatedChargeKw,
+        dischargeKW:V2.batteryDischargeKw,
+        exportKW:V2.gridExportLimitKw
+      },energy,solar,dayLoad,
+        h<19?Math.max(0,exports[i]||0):0,
+        cap*V2.eveningTarget);
+      energy=f.end;
+      exported=f.forced;
+      value-=f.grid*s.peakImport;
+      value+=(f.natural+exported)*Math.max(0,slot.rate);
+      if(exported>.001)action="Export";
+      else if(f.solarStored>.01)action="Solar charge / self-use";
 
-      const solarGrid = Math.max(0, surplus - solarCharge / efficiency);
-      const solarExport = Math.min(
-        solarGrid,
-        V2.gridExportLimitKw * .5
-      );
-      value += solarExport * Math.max(0, slot.rate);
-
-      // Forced exports only before 19:00.
-      // Once SOC reaches 20%, forced export stops.
-      if (h < 19 && energy > cap * V2.eveningTarget + .0001) {
-        const requested = exports[i] || 0;
-        const gridHeadroom = Math.max(
-          0,
-          V2.gridExportLimitKw * .5 - solarExport
-        );
-        const available = Math.max(
-          0,
-          (energy - cap * V2.eveningTarget) * efficiency
-        );
-        exported = Math.min(
-          requested,
-          gridHeadroom,
-          available,
-          Math.max(0, V2.batteryDischargeKw * .5 * efficiency - supplied)
-        );
-        if (exported > .001) {
-          energy -= exported / efficiency;
-          value += exported * Math.max(0, slot.rate);
-          action = "Export";
-        }
-      }
-
-      if (action !== "Export" && solarCharge > .01) {
-        action = "Solar charge / self-use";
-      }
     }
 
     // Check the 19:00 target at each boundary in the forecast.
