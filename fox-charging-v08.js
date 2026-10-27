@@ -143,6 +143,17 @@ function renderTargetResearchV380(result) {
  );
 }
 
+function researchBasisV458(input,projection){
+ const house=input.slots.reduce((sum,x)=>sum+x.house,0);
+ const solar=input.slots.reduce((sum,x)=>sum+x.solar,0);
+ return 'Forecast inputs used: predicted SOC at 23:30 before charging: '+
+  projection.soc.toFixed(2)+'%. Battery capacity: '+
+  input.config.capacity.toFixed(2)+' kWh.\n'+
+  'Next-day estimates within the 05:30–23:00 comparison: household '+
+  house.toFixed(2)+' kWh; solar '+solar.toFixed(2)+' kWh.\n'+
+  'The target below is SOC after overnight charging at 05:30. '+
+  'It can remain 100% when the starting SOC changes.\n';
+}
 function comparisonTimeV456(){
  return new Intl.DateTimeFormat('en-GB',{
   timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',
@@ -178,6 +189,7 @@ function compareTargetsV360(){
    output.textContent=
     'RESEARCH ONLY · Active overnight target remains 100%.\n'+
     'Comparison calculated at: '+comparisonTimeV456()+'\n'+
+    researchBasisV458(input,projection)+
      'Next-day comparison ends at 23:00 UK time. 23:00–23:30 is excluded from this calculation.\n'+
     'Lowest estimated cost among tested 5%-step targets: '+best.target+'%.\n'+
     'Predicted SOC at 05:30: '+best.socAt0530.toFixed(2)+'%; at 19:00: '+
