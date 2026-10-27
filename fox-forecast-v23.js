@@ -9,6 +9,7 @@ function run(mode,solarFactor,loadFactor){
  const prices=clocks.map(t=>t>=16&&t<19?35:8);
  let energy=capacity,scale=1,loadScale=1,at19=null;
  let grid=0,cancelled=0,residual=0;
+ let actualForced=0,actualNatural=0;
 
  function step(e,pv,h,request){
   const solarHome=Math.min(pv,h);
@@ -43,6 +44,9 @@ function run(mode,solarFactor,loadFactor){
    }
    return checkpoint===null||checkpoint>=target-1e-8;
   }
+  // If even zero forced export misses the target,
+  // request no further forced exports.
+  if(!feasible(actions))return actions;
   for(const i of order){
    for(let q=0;q<18;q++){
     actions[i]+=.1;
@@ -71,6 +75,8 @@ function run(mode,solarFactor,loadFactor){
    Math.abs(actualPV-z.solarHome-z.charge-z.natural-z.curtail),
    Math.abs(actualHome-z.solarHome-z.batteryHome-z.grid)
   );
+  actualForced+=z.forced;
+  actualNatural+=z.natural;
   energy=z.end;
   grid+=z.grid;
   if(clocks[i]===18.5)at19=energy/capacity*100;
@@ -78,7 +84,7 @@ function run(mode,solarFactor,loadFactor){
   loadScale=actualHome/.15;
  }
  return {
-  at19,end:energy,grid,cancelled,residual,
+  at19,end:energy,grid,cancelled,residual,actualForced,actualNatural,
   pass:at19>=20-1e-7
  };
 }
@@ -90,7 +96,7 @@ const section=document.createElement('section');
 section.id='foxForecastV23';
 section.style.cssText='padding:20px;margin:20px 0;border:1px solid #52718c;border-radius:16px;background:#101d30;color:#e5edf7';
 section.innerHTML=`
-<h3>Forecast errors & replanning · v2.3</h3>
+<h3>Forecast errors & replanning · v2.3.2</h3>
 <p>SYNTHETIC RESEARCH ONLY. Uses hypothetical prices and solar,
 not historical results or live readings. At noon, solar or household
 use changes unexpectedly. Adaptive mode updates its forecast from
@@ -112,7 +118,8 @@ section.querySelector('button').onclick=()=>{
   ['Forecast matches',1,1],
   ['Solar falls 50% at noon',.5,1],
   ['Home demand doubles at noon',1,2],
-  ['Both changes at noon',.5,2]
+  ['Both changes at noon',.5,2],
+  ['Extreme: no solar and 5x home demand from noon',0,5]
  ];
  for(const [name,pv,h] of scenarios){
   const a=run('fixed',pv,h),b=run('adaptive',pv,h);
@@ -122,8 +129,13 @@ section.querySelector('button').onclick=()=>{
    (a.pass?'PASS':'MISS')+'); adaptive '+
    b.at19.toFixed(2)+'% ('+(b.pass?'PASS':'MISS')+
    '). Adaptive grid use '+b.grid.toFixed(2)+
-   ' kWh; cancelled/reduced export requests '+
-   b.cancelled.toFixed(2)+' kWh. Energy residual '+
+   ' kWh. Actual forced battery export: fixed '+
+   a.actualForced.toFixed(2)+' kWh; adaptive '+
+   b.actualForced.toFixed(2)+' kWh. Net reduction '+
+   (a.actualForced-b.actualForced).toFixed(2)+
+   ' kWh (negative means adaptive exports more). '+
+   'Adaptive solar surplus export '+
+   b.actualNatural.toFixed(2)+' kWh. Energy residual '+
    b.residual.toFixed(8)+' kWh.';
   out.append(p);
  }
