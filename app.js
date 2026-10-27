@@ -464,71 +464,10 @@ function plan() {
   }
 }
 
-function renderFinancialComparison(base,opt){
- let panel=document.getElementById('financialComparison');
- if(!panel){
-  panel=document.createElement('section');
-  panel.id='financialComparison';
-  panel.className='panel';
-  panel.innerHTML=`
-<h3>Estimated benefit compared with self-use</h3>
-<label>Assumed wear (p per battery kWh discharged)
-<input id="financialWear" type="number" min="0" max="100" step="0.5">
-</label>
-<div id="financialResult" aria-live="polite"></div>
-<p class="note">Available-price horizon only, plus an assumed refill
-to 100% at the entered cheap rate. Charging costs within the horizon
-are already included; only the remaining shortfall is added.
-Both strategies start with the same manual SOC. Outside-horizon
-household use, EV charging feasibility, standing charges are excluded. This is a planning estimate, not
-measured profit. Wear is an optional sensitivity assumption and
-defaults to zero.</p>`;
-  document.querySelector('.metrics')
-   .insertAdjacentElement('afterend',panel);
-  const input=panel.querySelector('input');
-  input.value=financialWearP;
-  input.addEventListener('change',()=>{
-   if(!input.value.trim()||!input.checkValidity())return;
-   financialWearP=Number(input.value);
-   try{
-    localStorage.setItem('fox-wear-p',String(financialWearP));
-   }catch{}
-   plan();
-   window.foxSolarAwareRefreshV08?.();
-  });
- }
- const f=window.FoxFinanceCore.compare(base,opt,{
-  capacity:settings.capacity,
-  eff:Math.max(.5,Math.min(1,settings.efficiency/100)),
-  refillP:settings.cheapImport,wearP:financialWearP
- });
- const money=x=>(x<0?'−£':'£')+Math.abs(x).toFixed(2);
- const rows=[
-  ['Export earnings (solar + battery)',f.base.revenue,f.opt.revenue],
-  ['Import cost within forecast',f.base.importCost,f.opt.importCost],
-  ['Remaining assumed refill to 100%',f.base.refillCost,f.opt.refillCost],
-  ['Net energy cost before wear',f.base.beforeWear,f.opt.beforeWear]
- ];
- const result=document.getElementById('financialResult');
- result.innerHTML=
-  '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:left">'+
-  '<thead><tr><th>Forecast component</th><th>Self-use</th><th>Selected plan</th></tr></thead>'+
-  '<tbody>'+rows.map(([label,baseValue,optValue])=>
-   '<tr><td style="padding:9px 6px;border-bottom:1px solid #334765">'+label+
-   '</td><td>'+money(baseValue)+'</td><td>'+money(optValue)+'</td></tr>'
-  ).join('')+'</tbody></table></div>'+
-  '<p>Improvement before additional wear: <b>'+money(f.gross)+'</b><br>'+
-  'Additional battery discharge: '+f.extraDischarge.toFixed(2)+' kWh<br>'+
-  'Additional assumed wear at '+financialWearP.toFixed(1)+'p/kWh: '+
-  money(f.wearCost)+'</p>'+
-  '<p><b>Estimated net benefit versus self-use: '+money(f.net)+'</b></p>'+
-  '<p class="note">Net energy cost = import + remaining refill − export earnings. '+
-  'A negative cost means estimated earnings exceed those energy costs. '+
-  'Net benefit deducts wear on additional battery discharge; no credit is given for reduced wear.</p>'+
-  (!opt.reached19?'<p>19:00 checkpoint unavailable.</p>':
-   !opt.valid?'<p>WARNING: reserve forecast fails.</p>':'');
+function renderFinancialComparison(){
+ // Financial reporting uses recorded data in foxActualCosts only.
+ document.getElementById('financialComparison')?.remove();
 }
-
 
 // Project the selected plan to 23:30. Unpriced tail: self-use only.
 // Never invent export prices or forced exports beyond published coverage.
