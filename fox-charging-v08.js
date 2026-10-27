@@ -288,10 +288,13 @@ solarPanel.append(compareButton,targetOutput);
 
  const fields=[['evConnect','Assumed EV plug-in (UK time)',null,null,null],['evPercent','EV top-up (%)',1,100,1],['evDeadline','EV ready by (HH:MM)',null,null,null],['gridKw','Shared grid import cap (kW)',1,30,.1],['houseKw','House demand (kW)',0,15,.1],['evKw','EV charging power (kW)',0,22,.1],['batteryKw','Battery max charging power (kW)',0,20,.1],['evCapacity','EV usable capacity (kWh)',1,150,.1],['evEfficiency','EV charging efficiency (%)',50,100,1],['batteryEfficiency','Battery charging efficiency (%)',50,100,1]];
  const wrap=panel.querySelector('#foxChargeInputs');
- for(const [key,label,min,max,step] of fields){const lab=document.createElement('label');lab.textContent=label;const input=document.createElement('input');input.dataset.key=key;input.type=(key==='evDeadline'||key==='evConnect')?'time':'number';input.value=cfg[key];if(min!==null){input.min=min;input.max=max;input.step=step}input.addEventListener('change',()=>{if(key==='evDeadline'||key==='evConnect'){cfg[key]=/^\d{2}:\d{2}$/.test(input.value)?input.value:defaults[key]}else{cfg[key]=clamp(n(input.value,defaults[key]),min,max)}input.value=cfg[key];localStorage.setItem(KEY,JSON.stringify(cfg));render()});lab.append(input);wrap.append(lab)}
+ for(const [key,label,min,max,step] of fields){const lab=document.createElement('label');lab.textContent=label;const input=document.createElement('input');input.dataset.key=key;input.type=(key==='evDeadline'||key==='evConnect')?'time':'number';input.value=cfg[key];if(min!==null){input.min=min;input.max=max;input.step=step}input.addEventListener('change',()=>{if(key==='evDeadline'||key==='evConnect'){cfg[key]=/^\d{2}:\d{2}$/.test(input.value)?input.value:defaults[key]}else{cfg[key]=clamp(n(input.value,defaults[key]),min,max)}input.value=cfg[key];localStorage.setItem(KEY,JSON.stringify(cfg));render();window.foxReplanChargingV430?.()});lab.append(input);wrap.append(lab)}
  render();solarCard();refreshLearning();setInterval(()=>{render();solarCard()},30000);setInterval(refreshLearning,60000);
- document.querySelector('[name="soc"]')?.addEventListener('change',render);
- document.querySelector('[name="capacity"]')?.addEventListener('change',render);
+ document.getElementById('settings')?.addEventListener('change',()=>{
+  if(!document.getElementById('settings').checkValidity())return;
+  render();
+  window.foxSolarAwareRefreshV08?.();
+ });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 window.foxChargingPlannerV06={refresh:render};
