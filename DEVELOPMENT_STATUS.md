@@ -31,7 +31,6 @@ Updated: 27 October 2026
 - Integrate watchdog behaviour with a persistent controller.
 - Test command acknowledgement and physical inverter feedback.
 - No live inverter or Ohme control is implemented.
-- Charge Pack remains unchanged.
 
 ## Development workflow
 Use complete terminal-paste commands; no manual file edits or downloads.

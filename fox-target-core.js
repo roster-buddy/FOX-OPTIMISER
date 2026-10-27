@@ -31,8 +31,8 @@ function compare(c,slots,nightCfg,now){
  if(Date.parse(slots[0].utc)!==night.end)
   throw Error('Daytime comparison must start at 05:30');
  if(Date.parse(slots.at(-1).utc)+1800000!==
-    overnight.eventAt(night.end,'23:30'))
-  throw Error('Daytime comparison must cover through 23:30');
+    overnight.eventAt(night.end,'23:00'))
+  throw Error('Daytime comparison must cover through 23:00');
  const candidates=[];
  for(let target=20;target<=100;target+=5){
   const charge=overnight.simulate({...nightCfg,target},now);

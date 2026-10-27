@@ -20,7 +20,7 @@ const cfg={
  gridKw:8.3,houseKw:.4,batteryKw:5,batteryEfficiency:90,
  capacity:4,soc:5,evConnect:'23:30',evDeadline:'05:30'
 };
-const slots=Array.from({length:36},(_,i)=>{
+const slots=Array.from({length:35},(_,i)=>{
  const t=night.end+i*1800000;
  const h=new Date(t).getUTCHours()+new Date(t).getUTCMinutes()/60;
  return {
@@ -40,5 +40,5 @@ const valuable=target.compare(c,slots.map(s=>({
 assert(valuable.ok);
 assert.equal(valuable.best.target,100,'Cheap overnight energy can fund valuable exports');
 assert.throws(()=>target.compare(c,slots.slice(1),cfg,now),/05:30/);
-assert.throws(()=>target.compare(c,slots.slice(0,-1),cfg,now),/23:30/);
+assert.throws(()=>target.compare(c,slots.slice(0,-1),cfg,now),/23:00/);
 console.log('TARGET PASS: 23:30 record, retained fallback, solar headroom, valuable export and full-day coverage');

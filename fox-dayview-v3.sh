@@ -460,7 +460,7 @@ print('Happy Hour: 60-minute checkboxes only')
 print('Power Up: 30-minute checkboxes available')
 print('Default free import sessions: 2 hours per day; override available')
 print('Existing browser selections and overrides: PRESERVED')
-print('Read-only; Fox ESS and Charge Pack: UNCHANGED')
+print('Read-only; no inverter commands')
 print('Backups saved with suffix:', stamp)
 print('Reload preview-v2.html in Safari.')
 PY

@@ -54,7 +54,7 @@ function init(){
     'Export revenue less self-use opportunity value: £'+fmt(net)+'\n'+
     'Battery energy remaining: '+fmt(retained)+' kWh\n'+
     (net<0?'At the entered avoided-import price, retaining this energy may be better than exporting.':'Export may be attractive under these assumptions.')+'\n'+
-    'IMPORTANT: Candidate slots are price-ranked, not a validated sequential SOC dispatch. No forced export at or after 19:00. 3.5 kW is an instantaneous net-export cap, not a daily energy limit. Prices may be missing or unpublished; household use, losses and future import are estimates. Does not include degradation, standing charges or Charge Pack settlement.';
+    'IMPORTANT: Candidate slots are price-ranked, not a validated sequential SOC dispatch. No forced export at or after 19:00. 3.5 kW is an instantaneous net-export cap, not a daily energy limit. Prices may be missing or unpublished; household use, losses and future import are estimates. Does not include degradation or standing charges.';
   const t=el('table');t.style.cssText='width:100%;font-size:13px;border-collapse:collapse';const head=el('tr');for(const x of ['UK time','Agile p/kWh','Export kWh','Revenue'])head.append(el('th',x));t.append(head);
   for(const r of chosen.sort((a,b)=>a.from.localeCompare(b.from))){const p=ukParts(new Date(r.from));const tr=el('tr');for(const x of [p.day+'/'+p.month+' '+p.hour+':'+p.minute,fmt(r.price),fmt(r.delivered),'£'+fmt(r.delivered*r.price/100)]){const td=el('td',x);td.style.padding='7px';td.style.borderTop='1px solid #52627a';tr.append(td)}t.append(tr)}
   table.replaceChildren(t);

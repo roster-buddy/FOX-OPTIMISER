@@ -167,6 +167,7 @@ function compareTargetsV360(){
    const full=result.full;
    output.textContent=
     'RESEARCH ONLY · Active overnight target remains 100%.\n'+
+     'Next-day comparison ends at 23:00 UK time. 23:00–23:30 is excluded from this calculation.\n'+
     'Lowest estimated cost among tested 5%-step targets: '+best.target+'%.\n'+
     'Predicted SOC at 05:30: '+best.socAt0530.toFixed(2)+'%; at 19:00: '+
     best.at19.toFixed(2)+'%.\n'+
@@ -179,7 +180,7 @@ function compareTargetsV360(){
     '\nIncludes overnight battery charging, daytime import/export, optional wear '+
     'and an assumed terminal refill to the same full battery. '+
     'EV and overnight household costs are common to these candidates. '+
-    'No Charge Pack credits or measured-history validation.';
+    'Measured-history validation is not yet available.';
    renderTargetResearchV380({...result,capacity:input.config.capacity});
   }catch(error){
    output.textContent='Comparison unavailable: '+error.message+
@@ -255,7 +256,7 @@ function setup(){
  if(document.getElementById('foxChargingV06'))return;
  const host=document.querySelector('#v4Calendar')?.closest('section')||document.querySelector('main');if(!host)return;
  const panel=document.createElement('section');panel.className='panel';panel.id='foxChargingV06';
- panel.innerHTML=`<h3>EV + home battery charging planner</h3><p class="note">Read-only simulation · EV windows are estimates, NOT Ohme's actual schedule · Recalculates every 30 seconds</p><div id="foxChargeInputs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px"></div><p id="foxChargeStatus" aria-live="polite"></p><div style="overflow-x:auto"><table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr><th>UK time</th><th>EV avg kW</th><th>Battery avg kW</th><th>Grid avg kW</th><th>Tariff</th></tr></thead><tbody id="foxChargeRows"></tbody></table></div><p id="foxChargeFoot" class="note"></p><p class="note">Battery target 100% during learning. Solar is not assumed overnight. House demand and grid headroom are provisional. Ohme's real schedule and Octopus Charge Pack remain in control. No live data or hardware commands.</p>`;
+ panel.innerHTML=`<h3>EV + home battery charging planner</h3><p class="note">Read-only simulation · EV windows are estimates, NOT Ohme's actual schedule · Recalculates every 30 seconds</p><div id="foxChargeInputs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px"></div><p id="foxChargeStatus" aria-live="polite"></p><div style="overflow-x:auto"><table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr><th>UK time</th><th>EV avg kW</th><th>Battery avg kW</th><th>Grid avg kW</th><th>Tariff</th></tr></thead><tbody id="foxChargeRows"></tbody></table></div><p id="foxChargeFoot" class="note"></p><p class="note">Battery target 100% during learning. Solar is not assumed overnight. House demand and grid headroom are provisional. This simulation does not change Ohme or inverter schedules. No live data or hardware commands.</p>`;
  host.insertAdjacentElement('afterend',panel);
 
 const solarPanel=document.createElement('section');

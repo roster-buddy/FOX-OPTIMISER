@@ -479,8 +479,7 @@ function renderFinancialComparison(base,opt){
 to 100% at the entered cheap rate. Charging costs within the horizon
 are already included; only the remaining shortfall is added.
 Both strategies start with the same manual SOC. Outside-horizon
-household use, EV charging feasibility, Charge Pack credits and
-standing charges are excluded. This is a planning estimate, not
+household use, EV charging feasibility, standing charges are excluded. This is a planning estimate, not
 measured profit. Wear is an optional sensitivity assumption and
 defaults to zero.</p>`;
   document.querySelector('.metrics')
@@ -576,7 +575,7 @@ window.foxTargetInputsV360=function(night){
   return {available:false,reason:'Fresh published next-day prices required'};
  if(!solarForecastActive||!forecastFreshV320(v4LastSolarCheck,now))
   return {available:false,reason:'Fresh weather forecast required for target comparison'};
- const finish=window.FoxOvernightCore.eventAt(night.end,'23:30');
+ const finish=window.FoxOvernightCore.eventAt(night.end,'23:00');
  const rates=new Map();
  for(const p of prices){
   if(rates.has(p.start))
@@ -589,7 +588,7 @@ window.foxTargetInputsV360=function(night){
   const key=Math.floor(t/3600000)*3600000;
   if(!Number.isFinite(rate))
    return {available:false,reason:'Waiting for published export prices: first missing interval '+
-    date(t)+' '+time(t)+' Europe/London. Complete coverage through 23:30 is required'};
+    date(t)+' '+time(t)+' Europe/London. Complete coverage through 23:00 is required'};
   if(!solarForecastHours.has(key))
    return {available:false,reason:'Weather forecast coverage missing for '+
     date(t)+' '+time(t)+' Europe/London. Reload the solar forecast'};
@@ -722,7 +721,7 @@ $('settings').addEventListener('input',()=>{if(readSettings())plan()});$('refres
 
 
 // FOX OPTIMISER V0.4 FOUNDATION
-// Read-only. Charge Pack and Fox ESS remain untouched.
+// Read-only simulation. No inverter commands.
 
 const V4 = {
   learningDaysRequired: 28,
@@ -767,7 +766,7 @@ function v4BuildDashboard() {
     </p>
     <p class="note">
       No commands are sent to your battery.
-      This does not change Charge Pack scheduling.
+      Uses the entered import tariff and published export rates.
     </p>
   `;
 

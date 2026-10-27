@@ -30,7 +30,7 @@ const c={
  financialWearP:0
 };
 function reset(){
- c.prices=Array.from({length:36},(_,i)=>({
+ c.prices=Array.from({length:35},(_,i)=>({
   start:night.end+i*1800000,rate:30
  }));
  c.solarForecastHours=new Map(c.prices.map(x=>[
@@ -49,7 +49,12 @@ vm.runInContext(source.slice(a,b),c);
 reset();
 let r=c.window.foxTargetInputsV360(night);
 assert(r.available);
-assert.equal(r.slots.length,36);
+assert.equal(r.slots.length,35);
+assert.equal(
+ Date.parse(r.slots.at(-1).utc)+1800000,
+ overnight.eventAt(night.end,'23:00'),
+ 'Comparison ends at 23:00 without a 23:00 export rate'
+);
 assert.equal(r.slots.filter(x=>x.checkpoint).length,1);
 assert(r.slots.every(x=>x.solar===0),'Zero solar is valid');
 c.prices.splice(8,1);

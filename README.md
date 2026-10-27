@@ -11,11 +11,10 @@ A mobile-first, installable, **read-only** energy optimiser prototype for Fox ES
 - Works as an installable web app (PWA) and caches the interface for offline access.
 
 ## Important limitations
-- **Never sends control commands to Fox ESS.** No cloud key is needed and Octopus Charge Pack is not disturbed.
+- **Never sends control commands to Fox ESS.** No cloud key is needed.
 - No actual Fox ESS telemetry, solar forecast feed, house smart meter readings, battery capacity validation or charging control yet. All these are manual inputs. Live prices are fetched when available and clearly identified; otherwise sample prices must be deliberately selected.
 - Estimates are planning aids, not dispatch-grade optimisation. It uses simplified constant round-trip/energy loss assumptions, half-hour load estimates, a fixed import rate and a heuristic, not a full dynamic-programming solver. The export rate is an AC export limit; actual battery/inverter performance may vary.
 - Import tariff is user-entered; Intelligent Octopus Go can provide additional smart-charge periods not modelled here.
-- Outgoing Agile and Charge Pack eligibility/compatibility must be confirmed with Octopus before any future live control.
 
 ## Run on GitHub Codespaces from iPad
 1. Create a private GitHub repository named `fox-optimiser`.
