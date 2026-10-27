@@ -39,7 +39,12 @@ function reset(){
  c.v4LastPriceCheck=now;
  c.v4LastSolarCheck=now;
 }
+c.window.FoxChargeAdapter=require('./fox-charge-adapter.js');
 vm.createContext(c);
+vm.runInContext(source.slice(
+ source.indexOf('function chargingPolicyV420('),
+ source.indexOf('function simulateV2(')
+),c);
 vm.runInContext(source.slice(a,b),c);
 reset();
 let r=c.window.foxTargetInputsV360(night);

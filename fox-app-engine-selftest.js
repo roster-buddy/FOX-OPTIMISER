@@ -4,40 +4,42 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 
 const source=fs.readFileSync('app.js','utf8');
-const start=source.indexOf('function simulateV2(');
+const start=source.indexOf('function chargingPolicyV420(');
 const end=source.indexOf('\nfunction plan()',start);
 assert(start>=0&&end>start,'Simulation function must exist');
 const engine=source.slice(start,end);
 
 function simulate({soc=100,home=0,solar=0,h=12,
                    minute=0,cheap=false,request=0}={}){
+ // Winter UK time equals UTC. Use actual aligned intervals.
+ const at=Date.UTC(2026,9,27,cheap?23:h,cheap?30:minute);
  const context={
   financialWearP:0,
-  window:{FoxEnergyCore:require('./fox-energy-core.js'),FoxFinanceCore:require('./fox-finance-core.js')},
+  window:{
+   FoxScheduleCore:require('./fox-schedule-core.js'),
+   FoxChargeAdapter:require('./fox-charge-adapter.js'),
+   FoxEnergyCore:require('./fox-energy-core.js'),
+   FoxFinanceCore:require('./fox-finance-core.js')
+  },
+  // Isolate battery accounting under deliberately extreme home loads.
+  // Normal grid-conflict behaviour is tested separately.
+  localStorage:{getItem:()=>JSON.stringify({gridKw:30})},
   settings:{
-   capacity:10,soc,efficiency:90,
-   cheapImport:7,peakImport:28
+   capacity:10,soc,efficiency:90,cheapImport:7,peakImport:28
   },
   V2:{
    eveningTarget:.20,eveningMinimum:.05,
    gridExportLimitKw:3.5,
    estimatedChargeKw:5,batteryDischargeKw:5
   },
-  hour:t=>h+(t===1800000&&minute===30?.5:0),
-  mins:t=>t===1800000?(minute+30)%60:minute,
-  cheap:()=>cheap,
-  loadKwh:()=>home,
-  solarKwh:()=>solar
+  hour:t=>new Date(t).getUTCHours(),
+  mins:t=>new Date(t).getUTCMinutes(),
+  loadKwh:()=>home,solarKwh:()=>solar
  };
- // Supply the exact ending boundary for the 18:30 reserve check.
- if(h===18&&minute===30){
-  context.hour=t=>t===1800000?19:18;
-  context.mins=t=>t===1800000?0:30;
- }
  vm.createContext(context);
  vm.runInContext(
   engine+
-  '\nresult=simulateV2([{start:0,rate:40}],{0:'+request+'});',
+  '\nresult=simulateV2([{start:'+at+',rate:40}],{0:'+request+'});',
   context,{timeout:1000}
  );
  return context.result;

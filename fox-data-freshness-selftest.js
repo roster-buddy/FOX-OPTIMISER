@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('app.js','utf8');
 const code=source.slice(
- source.indexOf('function simulateV2('),
+ source.indexOf('function chargingPolicyV420('),
  source.indexOf('function renderFinancialComparison(')
 );
 const now=Date.parse('2026-10-27T12:00:00Z');
@@ -31,6 +31,7 @@ const c={
  render:()=>{},renderEmpty:()=>{},
  renderFinancialComparison:()=>{}
 };
+c.window.FoxChargeAdapter=require('./fox-charge-adapter.js');
 vm.createContext(c);
 vm.runInContext(code,c);
 const fresh=c.forecastFreshV320;

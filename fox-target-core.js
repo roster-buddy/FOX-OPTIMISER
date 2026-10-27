@@ -25,7 +25,7 @@ function decide(now,night,previous){
 }
 
 function compare(c,slots,nightCfg,now){
- if(!slots.length||slots.some(s=>s.cheap))
+ if(!slots.length||slots.some(s=>s.cheap&&!s.flexCharge))
   throw Error('Complete daytime inputs required');
  const night=overnight.windowFor(now);
  if(Date.parse(slots[0].utc)!==night.end)
@@ -36,12 +36,15 @@ function compare(c,slots,nightCfg,now){
  const candidates=[];
  for(let target=20;target<=100;target+=5){
   const charge=overnight.simulate({...nightCfg,target},now);
-  if(charge.batteryShort>.000001||charge.householdExceedsCap)continue;
+  if(charge.batteryShort>.000001||charge.householdExceedsCap||charge.gridExceeded)continue;
   const config={...c,initial:c.capacity*charge.predictedSoc/100};
   const result=scheduler.solve(config,slots);
   if(!result.ok||!result.valid||!result.reached19)continue;
   // Replay selected actions through the same accounting engine.
-  const checked=scheduler.replay(config,slots,result.steps.map(x=>x.forced));
+  const checked=scheduler.replay(
+   config,slots,result.steps.map(x=>x.forced),
+   result.steps.map(x=>x.chargeGrid)
+  );
   if(!checked.valid)continue;
   const overnightCost=charge.batDelivered*c.refillP/100;
   candidates.push({

@@ -20,7 +20,18 @@ const c={
  forecastFreshV320:(t,n)=>Number.isFinite(t)&&t<=n&&n-t<3600000,
  solarKwh:()=>0,loadKwh:()=>.1
 };
+c.window.FoxChargeAdapter=require('./fox-charge-adapter.js');
+c.window.FoxScheduleCore=require('./fox-schedule-core.js');
+c.settings.cheapImport=7;
+c.settings.peakImport=28;
+c.financialWearP=0;
+c.hour=t=>new Date(t).getUTCHours();
+c.mins=t=>new Date(t).getUTCMinutes();
 vm.createContext(c);
+vm.runInContext(source.slice(
+ source.indexOf('function chargingPolicyV420('),
+ source.indexOf('function simulateV2(')
+),c);
 vm.runInContext(source.slice(a,b),c);
 let result=c.overnightSocV350(now,cutoff);
 assert(result.available);
@@ -37,7 +48,35 @@ const cfg={
 const charge=night.simulate(cfg,now);
 assert(Math.abs(charge.batteryNeed-(10-10*result.soc/100)/.9)<1e-7);
 assert(Math.abs(charge.predictedSoc-100)<1e-7);
-c.loadKwh=()=>10;
+const withoutEV=result.soc;
+const evInterval={
+ start:'2026-10-27T20:00:00Z',end:'2026-10-27T20:30:00Z',kw:2
+};
+c.window.foxChargingScenarioV420={
+ mode:'max',confirmed:false,evSchedule:[evInterval],smartWindows:[]
+};
+result=c.overnightSocV350(now,cutoff);
+assert(result.available);
+assert(Math.abs(result.soc-withoutEV-.1/.9/10*100)<1e-7,
+ 'Max Charge protects the battery during supplied EV charging');
+
+c.window.foxChargingScenarioV420={
+ mode:'smart',confirmed:true,evSchedule:[evInterval],
+ smartWindows:[{start:evInterval.start,end:evInterval.end}]
+};
+const smart=c.overnightSocV350(now,cutoff);
+assert(smart.available);
+assert(Math.abs(smart.soc-result.soc)<1e-7,
+ 'Missing export prices permit hold, not invented economic charging');
+
+c.localStorage={getItem:()=>JSON.stringify({gridKw:1})};
+assert.equal(c.overnightSocV350(now,cutoff).available,false,
+ 'Supplied EV grid conflicts invalidate the projection');
+delete c.localStorage;
+delete c.window.foxChargingScenarioV420;
+
+// Six kW home demand stays below the default ceiling and reaches the floor.
+c.loadKwh=()=>3;
 result=c.overnightSocV350(now,cutoff);
 assert(result.available);
 assert(Math.abs(result.soc-5)<1e-7,'Evening minimum remains 5%');

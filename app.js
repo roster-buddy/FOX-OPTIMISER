@@ -289,90 +289,70 @@ const V2 = {
   batteryDischargeKw: 5
 };
 
-function simulateV2(slots, exports) {
-  const s = settings;
-  const efficiency = Math.max(.5, Math.min(1, s.efficiency / 100));
-  const cap = s.capacity;
-  let energy = cap * s.soc / 100;
-  let value = 0;
-  let valid = true;
-  let reached19 = false;
-  const output = [];
-  let importCost=0,revenue=0,dischargeStored=0;
-
-  for (let i = 0; i < slots.length; i++) {
-    const slot = slots[i];
-    const h = hour(slot.start) + mins(slot.start) / 60;
-    const dayLoad = loadKwh(slot.start);
-    const solar = solarKwh(slot.start);
-    const deficit = Math.max(0, dayLoad - solar);
-    const surplus = Math.max(0, solar - dayLoad);
-    const before = energy;
-    let action = "Self-use";
-    let exported = 0;
-
-    if (cheap(slot.start)) {
-      // Hold the battery; house and EV import from grid.
-      const charge = Math.min(
-        cap - energy,
-        V2.estimatedChargeKw * .5 * efficiency
-      );
-      energy += charge;
-      value -= (dayLoad + charge / efficiency) * s.cheapImport;
-      importCost+=(dayLoad+charge/efficiency)*s.cheapImport/100;
-      action = charge > .01 ? "Cheap charge" : "Hold charged";
-    } else {
-      const f=window.FoxEnergyCore.flow({
-        capacity:cap,eff:efficiency,
-        min:cap*V2.eveningMinimum,
-        chargeKW:V2.estimatedChargeKw,
-        dischargeKW:V2.batteryDischargeKw,
-        exportKW:V2.gridExportLimitKw
-      },energy,solar,dayLoad,
-        h<19?Math.max(0,exports[i]||0):0,
-        cap*V2.eveningTarget);
-      energy=f.end;
-      importCost+=f.grid*s.peakImport/100;
-      revenue+=(f.natural+f.forced)*slot.rate/100;
-      dischargeStored+=(f.batteryHome+f.forced)/efficiency;
-      exported=f.forced;
-      value-=f.grid*s.peakImport;
-      value+=(f.natural+exported)*Math.max(0,slot.rate);
-      if(exported>.001)action="Export";
-      else if(f.solarStored>.01)action="Solar charge / self-use";
-
-    }
-
-    // Check the 19:00 target at each boundary in the forecast.
-    const nextTime = slot.start + 1800000;
-    const nextHour = hour(nextTime);
-    const nextMinute = mins(nextTime);
-    if (nextHour === 19 && nextMinute === 0) {
-      reached19 = true;
-      if (energy < cap * V2.eveningTarget - .001) valid = false;
-    }
-
-    output.push({
-      ...slot,
-      action,
-      kwh: action === "Export" ? exported :
-           action === "Cheap charge" ? Math.max(0, energy - before) : 0,
-      socEnd: 100 * energy / cap,
-      solarEstimate: solar,
-      houseEstimate: dayLoad
-    });
-  }
-
-  const financial=window.FoxFinanceCore.settle({
-    importCost,revenue,end:energy,dischargeStored
-  },{
-    capacity:cap,eff:efficiency,
-    refillP:s.cheapImport,wearP:financialWearP
-  });
+window.foxReplanChargingV430=function(){
+ const table=document.getElementById('foxTargetTablesV380');
+ if(table)table.replaceChildren();
+ const output=document.getElementById('foxTargetResultV360');
+ if(output)output.textContent='Scenario changed. Run research comparison again.';
+ plan();
+};
+function chargingPolicyV420(){
+ let cfg={};
+ try{
+  cfg=JSON.parse(localStorage.getItem('fox-charging-v06-settings')||'{}')||{};
+ }catch{}
+ return {
+  ...(window.foxChargingScenarioV420||{
+   mode:'unknown',confirmed:false,evSchedule:[],smartWindows:[]
+  }),
+  cheapP:settings.cheapImport,peakP:settings.peakImport,
+  gridKW:Number.isFinite(cfg.gridKw)?cfg.gridKw:8.3,
+  evMaxKW:Number.isFinite(cfg.evKw)?cfg.evKw:6.63
+ };
+}
+function dispatchConfigV420(){
+ const cap=settings.capacity;
+ return {
+  capacity:cap,eff:Math.max(.5,Math.min(1,settings.efficiency/100)),
+  min:cap*.05,initial:cap*settings.soc/100,
+  target:cap*.20,forcedFloor:cap*.20,
+  chargeKW:V2.estimatedChargeKw,dischargeKW:V2.batteryDischargeKw,
+  exportKW:V2.gridExportLimitKw,
+  refillP:settings.cheapImport,wearP:financialWearP
+ };
+}
+function dispatchSlotV420(t,rate){
+ return window.FoxChargeAdapter.apply({
+  utc:new Date(t).toISOString(),clock:hour(t)+mins(t)/60,
+  solar:solarKwh(t),house:loadKwh(t),price:rate,
+  allowExport:hour(t)<19,
+  checkpoint:hour(t+1800000)===19&&mins(t+1800000)===0
+ },chargingPolicyV420());
+}
+function simulateV2(slots,exports={},gridRequests=[]){
+ const config=dispatchConfigV420();
+ const input=slots.map(x=>dispatchSlotV420(x.start,x.rate));
+ const result=window.FoxScheduleCore.replay(
+  config,input,slots.map((_,i)=>exports[i]||0),gridRequests
+ );
+ const output=result.steps.map((step,i)=>{
+  const action=step.forced>.001?'Export':
+   step.chargeGrid>.001?'Cheap charge':
+   step.hold?'Hold battery':
+   step.solarStored>.01?'Solar charge / self-use':'Self-use';
   return {
-    output,value,valid,reached19,end:energy,
-    importCost,revenue,dischargeStored,financial
+   ...slots[i],action,
+   kwh:action==='Export'?step.forced:
+    action==='Cheap charge'?step.chargeGrid*config.eff:0,
+   socEnd:100*step.ending/config.capacity,
+   solarEstimate:step.solar,houseEstimate:step.house,
+   evEstimate:step.ev,gridChargeEstimate:step.chargeGrid,
+   importRate:step.importP,gridConflict:step.gridConflict,
+   chargingSimulated:true,
+   partialEVApproximation:input[i].partialEVApproximation
   };
+ });
+ return {...result,output,value:(result.revenue-result.importCost)*100};
 }
 
 // Provisional data freshness policy: successful retrieval within 60 minutes.
@@ -426,38 +406,33 @@ function plan() {
 
   const slots = prices.slice().sort((a,b) => a.start - b.start);
 
-  const selfUse=simulateV2(slots,{});
+  let selfUse;
+  try{selfUse=simulateV2(slots,{})}
+  catch(error){
+   lastPlan=[];renderEmpty();
+   $('priceStatus').textContent='Charging simulation unavailable: '+error.message;
+   return;
+  }
+  if(selfUse.gridConflict){
+   lastPlan=[];renderEmpty();
+   $('priceStatus').textContent=
+    'SIMULATED GRID CONFLICT: supplied EV and estimated household demand exceed the provisional import ceiling. EV intervals have not been reduced or moved.';
+   return;
+  }
   let baseline=selfUse;
   const eff=Math.max(.5,Math.min(1,settings.efficiency/100));
   try {
-    const result=window.FoxScheduleCore.solve({
-      capacity:settings.capacity,eff,
-      min:settings.capacity*V2.eveningMinimum,
-      initial:settings.capacity*settings.soc/100,
-      target:settings.capacity*V2.eveningTarget,
-      forcedFloor:settings.capacity*V2.eveningTarget,
-      chargeKW:V2.estimatedChargeKw,
-      dischargeKW:V2.batteryDischargeKw,
-      exportKW:V2.gridExportLimitKw,
-      refillP:settings.cheapImport,wearP:financialWearP
-    },slots.map(x=>({
-      utc:new Date(x.start).toISOString(),
-      clock:hour(x.start)+mins(x.start)/60,
-      solar:cheap(x.start)?0:solarKwh(x.start),
-      house:loadKwh(x.start),price:x.rate,
-      importP:cheap(x.start)?settings.cheapImport:settings.peakImport,
-      cheap:cheap(x.start),
-      allowExport:!cheap(x.start)&&hour(x.start)<19,
-      checkpoint:hour(x.start+1800000)===19&&
-                 mins(x.start+1800000)===0
-    })));
-    if(result.ok&&result.valid&&result.reached19&&selfUse.valid){
+    const result=window.FoxScheduleCore.solve(
+     dispatchConfigV420(),slots.map(x=>dispatchSlotV420(x.start,x.rate))
+    );
+    if(result.ok&&result.valid&&result.reached19){
       const requests=Object.fromEntries(
         result.steps.map((x,i)=>[i,x.forced])
       );
-      const trial=simulateV2(slots,requests);
+      const trial=simulateV2(slots,requests,result.steps.map(x=>x.chargeGrid));
       if(trial.valid&&
-         trial.financial.cost<selfUse.financial.cost-.0001){
+          (!selfUse.valid||
+           trial.financial.cost<selfUse.financial.cost-.0001)){
         baseline=trial;
       }
     }
@@ -569,13 +544,18 @@ function overnightSocV350(now, cutoff) {
   while(cursor<cutoff){
     if(cursor+1800000>cutoff)
       return unavailable('Unaligned overnight boundary');
-    const f=window.FoxEnergyCore.flow({
-      capacity:cap,eff,min:cap*.05,
-      chargeKW:V2.estimatedChargeKw,
-      dischargeKW:V2.batteryDischargeKw,
-      exportKW:V2.gridExportLimitKw
-    },energy,solarKwh(cursor),loadKwh(cursor),0,cap*.20);
-    energy=f.end;
+    try{
+      // No invented export price or economic extra charging in the tail.
+      const slot={...dispatchSlotV420(cursor,0),allowExport:false};
+      const result=window.FoxScheduleCore.replay(
+        {...dispatchConfigV420(),initial:energy},[slot],[],[0]
+      );
+      if(result.gridConflict)
+        return unavailable('Supplied EV and estimated household demand exceed the grid ceiling in the forecast extension');
+      energy=result.end;
+    }catch(error){
+      return unavailable('Charging forecast extension unavailable: '+error.message);
+    }
     cursor+=1800000;
     tailSlots++;
   }
@@ -613,14 +593,7 @@ window.foxTargetInputsV360=function(night){
   if(!solarForecastHours.has(key))
    return {available:false,reason:'Weather forecast coverage missing for '+
     date(t)+' '+time(t)+' Europe/London. Reload the solar forecast'};
-  slots.push({
-   utc:new Date(t).toISOString(),
-   clock:hour(t)+mins(t)/60,
-   solar:solarKwh(t),house:loadKwh(t),price:rate,
-   importP:settings.peakImport,cheap:false,
-   allowExport:hour(t)<19,
-   checkpoint:hour(t+1800000)===19&&mins(t+1800000)===0
-  });
+  slots.push(dispatchSlotV420(t,rate));
  }
  const cap=settings.capacity;
  return {available:true,slots,config:{

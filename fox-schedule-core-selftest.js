@@ -63,7 +63,7 @@ console.log('ADAPTER PASS: historical and shared scheduler agree');
 const fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('app.js','utf8');
 const code=source.slice(
- source.indexOf('function simulateV2('),
+ source.indexOf('function chargingPolicyV420('),
  source.indexOf('function renderFinancialComparison(')
 );
 const status={textContent:''};
@@ -73,6 +73,7 @@ const context={
  },
  window:{
   FoxScheduleCore:core,
+   FoxChargeAdapter:require('./fox-charge-adapter.js'),
   FoxEnergyCore:require('./fox-energy-core.js'),
   FoxFinanceCore:require('./fox-finance-core.js')
  },

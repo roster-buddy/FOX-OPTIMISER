@@ -157,7 +157,10 @@ function compareTargetsV360(){
    if(!projection?.available)throw Error('Valid predicted 23:30 SOC required');
    const result=window.FoxTargetCore.compare(
     input.config,input.slots,
-    {...cfg,capacity:input.config.capacity,soc:projection.soc},now
+    {...cfg,
+     ...(window.foxChargingScenarioV420?
+      {evSchedule:window.foxChargingScenarioV420.evSchedule}:{}),
+     capacity:input.config.capacity,soc:projection.soc},now
    );
    if(!result.ok)throw Error(result.reason);
    const best=result.best;
@@ -210,6 +213,8 @@ function render(){
  const decision=targetDecisionV360(night);
  const result=window.FoxOvernightCore.simulate({
   ...cfg,
+  ...(window.foxChargingScenarioV420?
+   {evSchedule:window.foxChargingScenarioV420.evSchedule}:{}),
   capacity:batteryCapacity,
   soc,
   target:decision.target
