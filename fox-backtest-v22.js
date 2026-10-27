@@ -93,57 +93,24 @@
     if(slots.length!==36||solar.length!==36||prices.length!==36)throw Error('Invalid 36-slot day inputs.');
     if(prices.some(x=>!Number.isFinite(x)))throw Error('Published prices missing; refusing to invent prices.');
     if(solar.some(x=>!Number.isFinite(x)||x<0))throw Error('Solar input invalid.');
-    const quantum=.05,actionStep=.10,min=c.capacity*c.min/100,target=c.capacity*.20,initial=c.capacity*c.soc/100;
-    const credit=c.nightP/(100*c.eff);
-    let states=new Map([[Math.round(initial/quantum),{energy:initial,score:0,revenue:0,grid:0,forced:0,prev:null}]]);
-    const history=[];
-    for(let i=0;i<36;i++){
-      const clock=slots[i].clock,solarKWh=solar[i],house=demand(c,clock),p=prices[i];
-      const next=new Map();
-      for(const [oldKey,st] of states){
-        const f=energyCore.flow(
-          {...c,min},st.energy,solarKWh,house,
-          allowForced&&clock<19&&p>0?Number.MAX_VALUE:0
-        );
-        const {solarHome,batteryHome,grid,solarStored,afterSolar}=f;
-        const naturalExport=f.natural;
-        const curtailed=f.curtail,maxForced=f.forced;
-        const n=Math.ceil(maxForced/actionStep);
-        for(let j=0;j<=n;j++){
-          const forced=Math.min(maxForced,j*actionStep);
-          const after=afterSolar-forced/c.eff;
-          if(after<min-TOL)continue;
-          if(clock===18.5 && after<target-TOL)continue;
-          const nextKey=Math.round(after/quantum);
-          const income=(naturalExport+forced)*p/100;
-          const score=st.score+income-grid*c.importP/100;
-          const prior=next.get(nextKey);
-          if(!prior||score+after*credit>prior.score+prior.energy*credit){
-            next.set(nextKey,{energy:after,score,revenue:st.revenue+income,grid:st.grid+grid,forced:st.forced+forced,prev:oldKey,
-              step:{clock,utc:slots[i].utc,solar:solarKWh,house,price:p,solarHome,solarStored,naturalExport,curtailed,batteryHome,grid,forced,ending:after}});
-          }
-        }
-      }
-      if(!next.size)return {ok:false,reason:'No feasible schedule meets exactly 20% SOC at 19:00 with this starting SOC and modelled demand.'};
-      history.push(next);states=next;
-    }
-    let best=null,key=null;
-    for(const [k,s] of states){if(!best||s.score+s.energy*credit>best.score+best.energy*credit){best=s;key=k}}
-    const steps=[];
-    for(let i=history.length-1;i>=0;i--){const s=history[i].get(key);if(!s)throw Error('Path reconstruction failed');steps.push(s.step);key=s.prev;}
-    steps.reverse();
-    const at19=steps.find(s=>s.clock===18.5)?.ending;
-    if(!Number.isFinite(at19))throw Error('19:00 checkpoint missing.');
-    const plan={ok:true,steps,at19,end:best.energy,score:best.score,revenue:best.revenue,grid:best.grid,forced:best.forced};
+
+    const min=c.capacity*c.min/100,target=c.capacity*.20;
+    const engine=typeof module!=='undefined'&&module.exports
+      ?require('./fox-schedule-core.js'):root.FoxScheduleCore;
+    const plan=engine.solve({
+      ...c,min,target,initial:c.capacity*c.soc/100,
+      forcedFloor:min,refillP:c.nightP,wearP:c.wearP??0
+    },slots.map((x,i)=>({
+      ...x,solar:solar[i],house:demand(c,x.clock),
+      price:prices[i],importP:c.importP,
+      allowExport:x.clock<19,checkpoint:x.clock===18.5
+    })),allowForced);
+    if(!plan.ok)return plan;
     plan.audit=audit(plan,c);
-    if(plan.audit.worst>1e-6)throw Error('Energy accounting failed: '+plan.audit.worst);
-    if(at19+1e-7<target||best.energy+1e-7<min)throw Error('Battery SOC policy failed');
-    for(const s of steps){
-      if(s.forced+s.naturalExport>c.exportKW*.5+TOL)throw Error('Export interval cap failed');
-      if(s.batteryHome/c.eff+s.forced/c.eff>c.dischargeKW*.5+TOL)throw Error('Battery discharge cap failed');
-    }
+    if(plan.audit.worst>1e-6)throw Error('Energy accounting failed');
     return plan;
   }
+
   function compare(c,slots,solar,prices){
     const base=simulate(c,slots,solar,prices,false);
     const optimised=simulate(c,slots,solar,prices,true);
@@ -410,7 +377,7 @@ evForDate(endField.value,evSelect.value,night.evKWh,customInput.value);
         const results=[],bad=[];
         for(let i=0;i<dCount;i++){
           const s=allDays[i].slots,pSlice=rates.prices.slice(i*36,(i+1)*36),pv=solar.slice(i*36,(i+1)*36);
-          const r=compare(c,s,pv,pSlice);
+          const r=compare({...c,wearP:night.wearP},s,pv,pSlice);
           if(r.ok)results.push({date:allDays[i].date,solar:sum(pv),...r});
           else bad.push({date:allDays[i].date,reason:r.reason});
           if(i%3===2)await new Promise(resolve=>setTimeout(resolve,0));

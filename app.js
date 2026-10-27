@@ -358,36 +358,47 @@ function plan() {
   }
 
   const slots = prices.slice().sort((a,b) => a.start - b.start);
-  const exports = {};
-  let baseline = simulateV2(slots, exports);
-  const selfUse=baseline;
 
-  // Optimise highest-value export opportunities, but only accept
-  // changes that improve estimated net financial value.
-  const candidates = slots.map((slot, i) => ({
-    i, rate: slot.rate, start: slot.start
-  })).filter(x => {
-    const h = hour(x.start) + mins(x.start) / 60;
-    return !cheap(x.start) && h < 19;
-  }).sort((a,b) => b.rate - a.rate);
-
-  for (const candidate of candidates) {
-    // Require a 19:00 checkpoint in the forecast for safe planning.
-    if (!baseline.reached19 || !baseline.valid) continue;
-
-    const proposed = {
-      ...exports,
-      [candidate.i]: V2.gridExportLimitKw * .5
-    };
-    const trial = simulateV2(slots, proposed);
-    const actual = trial.output[candidate.i].kwh;
-
-    if (trial.valid &&
-        actual > .02 &&
-        trial.financial.cost < baseline.financial.cost - .0001) {
-      exports[candidate.i] = actual;
-      baseline = simulateV2(slots, exports);
+  const selfUse=simulateV2(slots,{});
+  let baseline=selfUse;
+  const eff=Math.max(.5,Math.min(1,settings.efficiency/100));
+  try {
+    const result=window.FoxScheduleCore.solve({
+      capacity:settings.capacity,eff,
+      min:settings.capacity*V2.eveningMinimum,
+      initial:settings.capacity*settings.soc/100,
+      target:settings.capacity*V2.eveningTarget,
+      forcedFloor:settings.capacity*V2.eveningTarget,
+      chargeKW:V2.estimatedChargeKw,
+      dischargeKW:V2.batteryDischargeKw,
+      exportKW:V2.gridExportLimitKw,
+      refillP:settings.cheapImport,wearP:financialWearP
+    },slots.map(x=>({
+      utc:new Date(x.start).toISOString(),
+      clock:hour(x.start)+mins(x.start)/60,
+      solar:cheap(x.start)?0:solarKwh(x.start),
+      house:loadKwh(x.start),price:x.rate,
+      importP:cheap(x.start)?settings.cheapImport:settings.peakImport,
+      cheap:cheap(x.start),
+      allowExport:!cheap(x.start)&&hour(x.start)<19,
+      checkpoint:hour(x.start+1800000)===19&&
+                 mins(x.start+1800000)===0
+    })));
+    if(result.ok&&result.valid&&result.reached19&&selfUse.valid){
+      const requests=Object.fromEntries(
+        result.steps.map((x,i)=>[i,x.forced])
+      );
+      const trial=simulateV2(slots,requests);
+      if(trial.valid&&
+         trial.financial.cost<selfUse.financial.cost-.0001){
+        baseline=trial;
+      }
     }
+  } catch(error) {
+    lastPlan=[];
+    renderEmpty();
+    $('priceStatus').textContent='Plan unavailable: '+error.message;
+    return;
   }
 
   lastPlan = baseline.output;
