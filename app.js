@@ -607,8 +607,12 @@ window.foxTargetInputsV360=function(night){
  for(let t=night.end;t<finish;t+=1800000){
   const rate=rates.get(t);
   const key=Math.floor(t/3600000)*3600000;
-  if(!Number.isFinite(rate)||!solarForecastHours.has(key))
-   return {available:false,reason:'Next-day price or solar coverage incomplete through 23:30'};
+  if(!Number.isFinite(rate))
+   return {available:false,reason:'Waiting for published export prices: first missing interval '+
+    date(t)+' '+time(t)+' Europe/London. Complete coverage through 23:30 is required'};
+  if(!solarForecastHours.has(key))
+   return {available:false,reason:'Weather forecast coverage missing for '+
+    date(t)+' '+time(t)+' Europe/London. Reload the solar forecast'};
   slots.push({
    utc:new Date(t).toISOString(),
    clock:hour(t)+mins(t)/60,

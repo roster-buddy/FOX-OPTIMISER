@@ -60,7 +60,91 @@ function solarCard() {
  rows.push('The comparison below evaluates timing and losses, not just total daily solar surplus.');
  node.textContent=rows.join('\n');
 }
+
+function renderTargetResearchV380(result) {
+ let panel=document.getElementById('foxTargetTablesV380');
+ if(!result){
+  if(panel)panel.replaceChildren();
+  return;
+ }
+ if(!panel){
+  const anchor=document.getElementById('foxTargetResultV360');
+  if(!anchor)return;
+  panel=document.createElement('div');
+  panel.id='foxTargetTablesV380';
+  anchor.insertAdjacentElement('afterend',panel);
+ }
+ const make=(tag,text)=>Object.assign(
+  document.createElement(tag),{textContent:text}
+ );
+ const table=(headers,rows)=>{
+  const wrap=document.createElement('div');
+  wrap.style.cssText='overflow:auto;max-height:400px;margin:12px 0';
+  const t=document.createElement('table');
+  t.style.cssText='width:100%;border-collapse:collapse;text-align:left';
+  const head=document.createElement('thead');
+  const hr=document.createElement('tr');
+  for(const text of headers)hr.append(make('th',text));
+  head.append(hr);
+  const body=document.createElement('tbody');
+  for(const values of rows){
+   const row=document.createElement('tr');
+   for(const text of values){
+    const cell=make('td',String(text));
+    cell.style.cssText='padding:9px 6px;border-bottom:1px solid #334765';
+    row.append(cell);
+   }
+   body.append(row);
+  }
+  t.append(head,body);
+  wrap.append(t);
+  return wrap;
+ };
+ const best=result.best;
+ const candidates=[...result.candidates].sort((a,b)=>a.target-b.target);
+ const fmt=x=>Number(x).toFixed(2);
+ const basis=result.full||best;
+ const targets=table(
+  ['Target','SOC at 05:30','Battery grid charge','SOC at 19:00','Benefit vs baseline'],
+  candidates.map(x=>[
+   x.target+'%',
+   fmt(x.socAt0530)+'%',
+   fmt(x.overnightKWh)+' kWh',
+   fmt(x.at19)+'%',
+   '£'+fmt(basis.cost-x.cost)+(x.target===best.target?' · selected':'')
+  ])
+ );
+ const uk=new Intl.DateTimeFormat('en-GB',{
+  timeZone:'Europe/London',day:'2-digit',month:'short',
+  hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+ });
+ const schedule=table(
+  ['Half-hour start (UK)','Export rate','Battery export','Solar stored','SOC at end'],
+  best.result.steps.map(x=>[
+   uk.format(new Date(x.utc)),
+   fmt(x.price)+'p/kWh',
+   fmt(x.forced)+' kWh',
+   fmt(x.solarStored)+' kWh',
+   fmt(x.ending/result.capacity*100)+'%'+
+    (x.checkpoint?' · 19:00 checkpoint':'')
+  ])
+ );
+ panel.replaceChildren(
+  make('h4','Overnight target comparison · research'),
+  make('p','Snapshot only. Re-run after prices, weather or assumptions change. '+
+   'Only feasible tested targets appear. Baseline: '+
+   (result.full?'100% target.':'best feasible candidate; 100% is infeasible.')),
+  targets,
+  make('h4','Selected research schedule · '+best.target+'% overnight target'),
+  make('p','This is the selected research scenario, not the active dashboard export plan. '+
+   'Solar stored is battery energy after charging losses. '+
+   'Household use and natural solar exports are included in the calculation.'),
+  schedule
+ );
+}
+
 function compareTargetsV360(){
+ renderTargetResearchV380(null);
  const output=document.getElementById('foxTargetResultV360');
  output.textContent='Calculating research comparison...';
  setTimeout(()=>{
@@ -93,6 +177,7 @@ function compareTargetsV360(){
     'and an assumed terminal refill to the same full battery. '+
     'EV and overnight household costs are common to these candidates. '+
     'No Charge Pack credits or measured-history validation.';
+   renderTargetResearchV380({...result,capacity:input.config.capacity});
   }catch(error){
    output.textContent='Comparison unavailable: '+error.message+
     '. Active overnight target remains 100%.';
