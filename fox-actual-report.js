@@ -46,5 +46,22 @@ function reconcile(streams,keys,window,now,exact){
  }
  return {available:true,reason:null};
 }
-const api={build};if(node)module.exports=api;else root.FoxActualReport=api;
+function csv(report){
+ const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings'];
+ if(!report?.window||!keys.some(key=>Number.isFinite(report[key]?.total)))return null;
+ const cell=value=>{
+  let text=String(value??'');
+  if(/^[=+@\t\r]/.test(text))text="'"+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+ };
+ const lines=[['Period start UTC','Period end UTC','Time zone','Item','Recorded kWh','Cost or earnings GBP','Status']];
+ for(const key of keys){
+  const m=report[key];
+  const value=m?.available?(Number.isFinite(m.cost)?m.cost:Number.isFinite(m.value)?m.value:''):'';
+  lines.push([new Date(report.window.start).toISOString(),new Date(report.window.end).toISOString(),'Europe/London',key,
+   Number.isFinite(m?.total)?m.total:'',value,m?.reason||(m?.available?'Complete recorded data':'Data unavailable')]);
+ }
+ return lines.map(row=>row.map(cell).join(',')).join('\r\n')+'\r\n';
+}
+const api={build,csv};if(node)module.exports=api;else root.FoxActualReport=api;
 })(typeof window!=='undefined'?window:globalThis);
