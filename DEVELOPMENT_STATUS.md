@@ -38,3 +38,13 @@ Use complete terminal-paste commands; no manual file edits or downloads.
 Python port 8000 is the local static preview.
 Keep the preview server in a separate terminal.
 Stage named files only; do not publish backup files or credentials.
+
+## Latest verification
+- No Home Assistant hardware purchased or installed, confirmed 27 October 2026.
+- Combined replanner, data gate and watchdog synthetic tests passed.
+- Missing/stale readings block forced exports.
+- Fresh readings alone cannot restart an interrupted plan.
+- A new synthetic plan resumes exports and retains 20.43% SOC at 19:00
+  in the tested recovery scenarios.
+- The simulator still supplies known battery state to the planner.
+  Delayed-state estimation and physical control remain untested.
