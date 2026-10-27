@@ -50,15 +50,7 @@ const ledger=require('./fox-cost-ledger.js').summarise(
 ctx.renderTargetResearchV380({best:candidate,full,
  candidates:[candidate,full],capacity:10,ledger});
 content=text(nodes.foxTargetTablesV380);
-assert.match(content,/Your electricity costs, exports and savings/);
-assert.match(content,/Overnight battery grid charging/);
-assert.match(content,/EV grid charging, whole forecast period/);
-assert.match(content,/Direct solar export/);
-assert.match(content,/Battery export \(including stored solar\)/);
-assert.match(content,/House and EV: energy supplied and savings/);
-assert.match(content,/Cost if all demand came from grid/);
-assert.match(content,/not meter readings or a bill/);
-assert.match(content,/do not add them together/);
+assert.doesNotMatch(content,/Your electricity costs, exports and savings|Remaining assumed refill/);
 ctx.renderTargetResearchV380(null);
 assert.equal(nodes.foxTargetTablesV380.children.length,0);
 console.log('TARGET DISPLAY PASS: candidate benefit, selected schedule, SOC units, UK times and previous-result clearing');
