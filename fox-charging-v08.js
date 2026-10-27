@@ -143,6 +143,12 @@ function renderTargetResearchV380(result) {
  );
 }
 
+function comparisonTimeV456(){
+ return new Intl.DateTimeFormat('en-GB',{
+  timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',
+  hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+ }).format(new Date())+' Europe/London';
+}
 let targetComparisonRequestedV455=false;
 let targetComparisonTimerV455;
 function compareTargetsV360(){
@@ -171,6 +177,7 @@ function compareTargetsV360(){
    const full=result.full;
    output.textContent=
     'RESEARCH ONLY · Active overnight target remains 100%.\n'+
+    'Comparison calculated at: '+comparisonTimeV456()+'\n'+
      'Next-day comparison ends at 23:00 UK time. 23:00–23:30 is excluded from this calculation.\n'+
     'Lowest estimated cost among tested 5%-step targets: '+best.target+'%.\n'+
     'Predicted SOC at 05:30: '+best.socAt0530.toFixed(2)+'%; at 19:00: '+
@@ -188,7 +195,7 @@ function compareTargetsV360(){
    renderTargetResearchV380({...result,capacity:input.config.capacity});
   }catch(error){
    output.textContent='Comparison unavailable: '+error.message+
-    '. Active overnight target remains 100%.';
+    '. Active overnight target remains 100%.\nLast comparison attempt: '+comparisonTimeV456();
   }
  },0);
 }
