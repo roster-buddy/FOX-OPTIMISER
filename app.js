@@ -588,6 +588,46 @@ window.foxOvernightSocV350=function(cutoff){
   return overnightSocV350(Date.now(),cutoff);
 };
 
+
+// Expose complete next-day research inputs without inventing prices.
+window.foxTargetInputsV360=function(night){
+ const now=Date.now();
+ if(priceSource!=='live'||!forecastFreshV320(v4LastPriceCheck,now))
+  return {available:false,reason:'Fresh published next-day prices required'};
+ if(!solarForecastActive||!forecastFreshV320(v4LastSolarCheck,now))
+  return {available:false,reason:'Fresh weather forecast required for target comparison'};
+ const finish=window.FoxOvernightCore.eventAt(night.end,'23:30');
+ const rates=new Map();
+ for(const p of prices){
+  if(rates.has(p.start))
+   return {available:false,reason:'Duplicate price intervals'};
+  rates.set(p.start,p.rate);
+ }
+ const slots=[];
+ for(let t=night.end;t<finish;t+=1800000){
+  const rate=rates.get(t);
+  const key=Math.floor(t/3600000)*3600000;
+  if(!Number.isFinite(rate)||!solarForecastHours.has(key))
+   return {available:false,reason:'Next-day price or solar coverage incomplete through 23:30'};
+  slots.push({
+   utc:new Date(t).toISOString(),
+   clock:hour(t)+mins(t)/60,
+   solar:solarKwh(t),house:loadKwh(t),price:rate,
+   importP:settings.peakImport,cheap:false,
+   allowExport:hour(t)<19,
+   checkpoint:hour(t+1800000)===19&&mins(t+1800000)===0
+  });
+ }
+ const cap=settings.capacity;
+ return {available:true,slots,config:{
+  capacity:cap,eff:Math.max(.5,Math.min(1,settings.efficiency/100)),
+  min:cap*.05,target:cap*.20,forcedFloor:cap*.20,
+  chargeKW:V2.estimatedChargeKw,dischargeKW:V2.batteryDischargeKw,
+  exportKW:V2.gridExportLimitKw,
+  refillP:settings.cheapImport,wearP:financialWearP
+ }};
+};
+
 function renderForecastSocV330(slots) {
   let panel = document.getElementById('forecastSocPanel');
   if (!slots.length) {

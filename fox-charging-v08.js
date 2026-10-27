@@ -28,33 +28,76 @@ const typeAt=d=>{const x=window.foxOctopusSessions?.getForDay?.(localDate(d));if
 
 const solarState={learningComplete:false,learningDays:0,loggerOnline:false};
 const ukDay=(d)=>{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const x=Object.fromEntries(p.map(a=>[a.type,a.value]));return x.year+'-'+x.month+'-'+x.day;};
-function solarCard() {
- const node=document.getElementById('foxSolarAwareV08');if(!node)return;
- const start=new Date();start.setHours(23,30,0,0);if(new Date()>=start)start.setDate(start.getDate()+1);
- const target=new Date(start);target.setDate(target.getDate()+1);
- const day=ukDay(target);
- const snap=window.foxSolarForecastV08?.(day);
- const cap=Number(document.querySelector('[name="capacity"]')?.value);
- const soc=Number(document.querySelector('[name="soc"]')?.value);
- const valid=Number.isFinite(cap)&&cap>0&&Number.isFinite(soc)&&soc>=0&&soc<=100;
- const fmt=x=>Number(x).toFixed(2);
- const rows=[];
- rows.push('Learning: '+(solarState.loggerOnline?(solarState.learningDays+' / 28 valid days'):'No verified logger status')+'.');
- if(!snap?.available){rows.push('Solar: '+(snap?.reason||'Forecast not yet loaded')+'. Load the existing Solar forecast panel.');}
- else {
-  rows.push('Forecast for '+day+': '+fmt(snap.generationKwh)+' kWh solar; '+fmt(snap.dayHouseKwh)+' kWh estimated daytime home demand.');
-  rows.push('Simple estimated daytime surplus: '+fmt(snap.surplusKwh)+' kWh. This is NOT guaranteed battery charging: generation timing, household load, battery charging limits and exports matter.');
-  if(valid){
-   const minSoc=20;
-   const hypothetical=Math.max(minSoc,100-100*Math.min(snap.surplusKwh,cap*(1-minSoc/100))/cap);
-   const overnight100=cap*(100-soc)/100/.9;
-   const overnightScenario=cap*Math.max(0,hypothetical-soc)/100/.9;
-   rows.push('100% overnight baseline: '+fmt(overnight100)+' kWh grid energy from entered SOC.');
-   rows.push('Illustrative solar-headroom scenario: '+hypothetical.toFixed(0)+'% target ('+fmt(overnightScenario)+' kWh grid energy). NOT an optimised recommendation.');
-  }
+
+function targetDecisionV360(night){
+ const key='fox-target-decision-v360';
+ let previous=null;
+ try{previous=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+ const decision=window.FoxTargetCore.decide(Date.now(),night,previous);
+ if(!decision.pending){
+  try{localStorage.setItem(key,JSON.stringify(decision));}catch{}
  }
- rows.push(solarState.learningComplete?'28-day threshold reached. Adaptive target still requires a validated measured consumption/export model; the planner remains at 100% until that is implemented.':'During learning, the active battery target stays 100%. Solar scenario is informational only.');
+ return decision;
+}
+function solarCard() {
+ const node=document.getElementById('foxSolarAwareV08');
+ if(!node)return;
+ const night=window.FoxOvernightCore.windowFor(Date.now());
+ const decision=targetDecisionV360(night);
+ const day=ukDay(new Date(night.end));
+ const snap=window.foxSolarForecastV08?.(day);
+ const rows=[
+  'Active overnight target: 100%.',
+  decision.pending?'23:30 decision pending.':'23:30 decision recorded for this night.',
+  decision.note,
+  'The app must be open to record this decision. No background scheduler or device control.'
+ ];
+ if(decision.late)rows.push('Recorded after 23:30; this is not proof a decision ran at the cutoff.');
+ if(snap?.available){
+  rows.push('Weather estimate for '+day+': '+snap.generationKwh.toFixed(2)+
+   ' kWh solar. Household demand remains estimated.');
+ }else rows.push('Weather unavailable. The active overnight target remains 100%.');
+ rows.push('The comparison below evaluates timing and losses, not just total daily solar surplus.');
  node.textContent=rows.join('\n');
+}
+function compareTargetsV360(){
+ const output=document.getElementById('foxTargetResultV360');
+ output.textContent='Calculating research comparison...';
+ setTimeout(()=>{
+  try{
+   const now=Date.now();
+   const night=window.FoxOvernightCore.windowFor(now);
+   const input=window.foxTargetInputsV360?.(night);
+   if(!input?.available)throw Error(input?.reason||'Target inputs unavailable');
+   const projection=window.foxOvernightSocV350?.(night.start);
+   if(!projection?.available)throw Error('Valid predicted 23:30 SOC required');
+   const result=window.FoxTargetCore.compare(
+    input.config,input.slots,
+    {...cfg,capacity:input.config.capacity,soc:projection.soc},now
+   );
+   if(!result.ok)throw Error(result.reason);
+   const best=result.best;
+   const full=result.full;
+   output.textContent=
+    'RESEARCH ONLY · Active overnight target remains 100%.\n'+
+    'Lowest estimated cost among tested 5%-step targets: '+best.target+'%.\n'+
+    'Predicted SOC at 05:30: '+best.socAt0530.toFixed(2)+'%; at 19:00: '+
+    best.at19.toFixed(2)+'%.\n'+
+    'Overnight battery import: '+best.overnightKWh.toFixed(2)+' kWh. '+
+    'Next-day forced battery export: '+best.forced.toFixed(2)+' kWh.\n'+
+    (full?'Estimated improvement versus charging to 100%: £'+
+     Math.max(0,full.cost-best.cost).toFixed(2)+'.':
+     '100% target is infeasible under the entered overnight assumptions.')+
+    (best.evShort>.05?'\nWARNING: EV charging requirement is also infeasible.':'')+
+    '\nIncludes overnight battery charging, daytime import/export, optional wear '+
+    'and an assumed terminal refill to the same full battery. '+
+    'EV and overnight household costs are common to these candidates. '+
+    'No Charge Pack credits or measured-history validation.';
+  }catch(error){
+   output.textContent='Comparison unavailable: '+error.message+
+    '. Active overnight target remains 100%.';
+  }
+ },0);
 }
 async function refreshLearning(){
  try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error('offline');const data=await r.json();solarState.loggerOnline=true;solarState.learningDays=Number(data.valid_days)||0;solarState.learningComplete=data.learning_complete===true;}
@@ -79,11 +122,12 @@ function render(){
   'MANUAL FALLBACK: '+manualSoc.toFixed(2)+'% assumed at 23:30. '+
   (projection?.reason||'Daytime forecast link unavailable')+'.';
 
+ const decision=targetDecisionV360(night);
  const result=window.FoxOvernightCore.simulate({
   ...cfg,
   capacity:batteryCapacity,
   soc,
-  target:100
+  target:decision.target
  },Date.now());
 
  const {
@@ -112,7 +156,7 @@ function render(){
  const status=document.getElementById('foxChargeStatus');
  const evOK=evLeft<.05,batOK=batLeft<.05;
   if(deadlineOutsideWindow) { status.title='EV deadline is after 05:30. This simulation only models the 23:30–05:30 overnight window.'; } else { status.removeAttribute('title'); }
- status.textContent=startingNote+' '+`EV: ${fmt(evDelivered)} / ${fmt(evNeed)} kWh from mains by ${cfg.evDeadline} (${evOK?'feasible':'SHORT '+fmt(evLeft)+' kWh'}). Battery: ${fmt(batDelivered)} / ${fmt(batteryNeed)} kWh from mains (${batOK?'target feasible':'SHORT '+fmt(batLeft)+' kWh'}). Peak simultaneous grid import: ${cfg.gridKw.toFixed(1)} kW (provisional). Battery starts at 23:30; EV priority from assumed connection ${cfg.evConnect} UK time. Target: 100%.${result.householdExceedsCap?' WARNING: household demand alone exceeds the import ceiling.':''}`;
+ status.textContent=startingNote+' '+`EV: ${fmt(evDelivered)} / ${fmt(evNeed)} kWh from mains by ${cfg.evDeadline} (${evOK?'feasible':'SHORT '+fmt(evLeft)+' kWh'}). Battery: ${fmt(batDelivered)} / ${fmt(batteryNeed)} kWh from mains (${batOK?'target feasible':'SHORT '+fmt(batLeft)+' kWh'}). Peak simultaneous grid import: ${cfg.gridKw.toFixed(1)} kW (provisional). Battery starts at 23:30; EV priority from assumed connection ${cfg.evConnect} UK time. Target: ${decision.target}%. ${decision.note}${result.householdExceedsCap?' WARNING: household demand alone exceeds the import ceiling.':''}`;
  const tbody=document.getElementById('foxChargeRows');tbody.replaceChildren();
  for(const r of rows){const tr=document.createElement('tr');for(const x of [r.at,fmt(r.ev),fmt(r.bat),fmt(r.grid),r.free?'Booked free session*':'Intelligent Go · cheap']){const td=document.createElement('td');td.textContent=x;td.style.padding='7px 5px';tr.append(td)}tbody.append(tr)}
  document.getElementById('foxChargeFoot').textContent=`Estimated scheduled import: ${fmt(freeImport)} kWh in marked free slots and ${fmt(paidImport)} kWh in other slots. *The 23:30–05:30 period is shown as Intelligent Octopus Go cheap-rate unless a booked free session is explicitly marked. Free import is subject to Octopus eligibility, booked-hour allowances and actual metering. Rows show half-hour average power. Segment checks use assumed constant loads; they cannot enforce instantaneous limits. This simulates the whole selected night from the labelled starting SOC, not charging already delivered. This is a planning estimate, not a bill or live Ohme reading.`;
@@ -129,6 +173,16 @@ solarPanel.className='panel';
 solarPanel.id='foxSolarAwareV08Panel';
 solarPanel.innerHTML='<h3>Solar-aware overnight battery planning · v0.8</h3><p class="note">Forecast scenario only. Active battery target remains 100% during learning.</p><div id="foxSolarAwareV08" style="white-space:pre-line;line-height:1.8"></div>';
 panel.insertAdjacentElement('afterend',solarPanel);
+const compareButton=document.createElement('button');
+compareButton.type='button';
+compareButton.textContent='Compare next-day overnight targets · research';
+compareButton.addEventListener('click',compareTargetsV360);
+const targetOutput=document.createElement('p');
+targetOutput.id='foxTargetResultV360';
+targetOutput.style.whiteSpace='pre-line';
+targetOutput.textContent='Comparison not run. Active target remains 100%.';
+solarPanel.append(compareButton,targetOutput);
+
 
  const fields=[['evConnect','Assumed EV plug-in (UK time)',null,null,null],['evPercent','EV top-up (%)',1,100,1],['evDeadline','EV ready by (HH:MM)',null,null,null],['gridKw','Shared grid import cap (kW)',1,30,.1],['houseKw','House demand (kW)',0,15,.1],['evKw','EV charging power (kW)',0,22,.1],['batteryKw','Battery max charging power (kW)',0,20,.1],['evCapacity','EV usable capacity (kWh)',1,150,.1],['evEfficiency','EV charging efficiency (%)',50,100,1],['batteryEfficiency','Battery charging efficiency (%)',50,100,1]];
  const wrap=panel.querySelector('#foxChargeInputs');
