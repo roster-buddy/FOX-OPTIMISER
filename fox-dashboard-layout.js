@@ -13,7 +13,7 @@ function setup(){
  }
  main.prepend(intro);main.prepend(nav);
  function category(panel){
-  if(panel.id==='foxActualCosts')return 'actual';
+  if(['foxActualCosts','v4Calendar'].includes(panel.id))return 'actual';
   if(panel.matches('.hero,.metrics')||panel.querySelector('#priceChart,#schedule')||panel.id==='foxSolarAwareV08Panel')return 'planning';
   if(panel.querySelector('#settings,#sampleBtn')||['solarV3Panel','foxChargingV06','foxChargeScenarioPanel','foxSessionsV3','exportPowerExplanation'].includes(panel.id))return 'settings';
   return 'tools';
