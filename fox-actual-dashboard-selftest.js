@@ -15,3 +15,10 @@ input.value='2026-10-25';input.change();
 assert.match(period.textContent,/25 hours/);
 assert.equal(rows.children.length,10,'Changing date replaces rows');
 console.log('ACTUAL DASHBOARD PASS: dependency startup, unavailable costs, reasons and DST date changes');
+
+
+input.value='2026-02-30';input.change();
+assert.equal(rows.children.length,0,'Invalid date clears the previous report');
+assert.match(period.textContent,/valid end date/);
+input.value='2026-10-25';input.change();
+assert.equal(rows.children.length,10,'Valid date restores report rows');

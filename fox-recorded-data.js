@@ -19,6 +19,7 @@ function inspect(rows,window,now){
   if(r.measured!==true||!known.has(r.source))return fail('Measured source required');
   if(!Number.isFinite(r.value)||r.value<0)return fail('Invalid recorded energy');
   cursor=r.end;total+=r.value;
+  if(!Number.isFinite(total))return fail('Recorded energy total is out of range');
  }
  if(cursor!==window.end)return fail('Missing readings');
  return {available:true,reason:null,total,intervals:selected};
@@ -36,6 +37,7 @@ function price(rows,rates,window,now){
   // A tariff transition inside a measurement cannot be apportioned without finer readings.
   if(applicable.length!==1||applicable[0].start>row.start||applicable[0].end<row.end)return fail('Tariff gap, overlap or unresolved rate change');
   cost+=row.value*applicable[0].pence/100;
+  if(!Number.isFinite(cost))return fail('Recorded cost is out of range');
  }
  return {available:true,reason:null,total:energy.total,cost};
 }
@@ -43,3 +45,4 @@ const api={inspect,price};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 else root.FoxRecordedData=api;
 })(typeof window!=='undefined'?window:globalThis);
+

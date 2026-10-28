@@ -24,3 +24,11 @@ for(const day of ['2026-10-26','2026-10-25','2026-03-29']){
  assert.equal(data.price(rows,rates.map(r=>({...r,end:w.end-1800000})),w,now).cost,null);
 }
 console.log('RECORDED DATA PASS: actual pricing, gaps, overlaps, boundary crossings, unconfirmed rates and 23/24/25-hour days');
+
+
+const w=dates.windowFor('2026-10-26');
+const huge=[{...w,start:w.start,end:w.start+1800000,value:Number.MAX_VALUE,source:'octopus',measured:true},
+ {...w,start:w.start+1800000,value:Number.MAX_VALUE,source:'octopus',measured:true}];
+assert.equal(data.inspect(huge,w,w.end).available,false);
+const one=[{...w,value:Number.MAX_VALUE,source:'octopus',measured:true}];
+assert.equal(data.price(one,[{...w,pence:1000,confirmed:true}],w,w.end).cost,null);

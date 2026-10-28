@@ -19,12 +19,14 @@ function windowFor(endDay){return {start:boundary(previousDay(endDay)),end:bound
 function latestEndDay(now){const p=parts(now);let day=p.year+'-'+p.month+'-'+p.day;return now>=boundary(day)?day:previousDay(day);}
 // Each metric needs complete, consecutive measured intervals. Missing is never zero.
 function total(records,window,now){
- if(window.end>now)return null;
- const rows=(records||[]).filter(r=>r.start>=window.start&&r.start<window.end).sort((a,b)=>a.start-b.start);
+ if(!window||!Number.isFinite(window.start)||!Number.isFinite(window.end)||window.end<=window.start||!Number.isFinite(now)||window.end>now||!Array.isArray(records))return null;
+ if(records.some(r=>!r||!Number.isFinite(r.start)||!Number.isFinite(r.end)||r.end<=r.start))return null;
+ const rows=records.filter(r=>r.end>window.start&&r.start<window.end).sort((a,b)=>a.start-b.start);
  let cursor=window.start,sum=0;
  for(const r of rows){
-  if(r.start!==cursor||!Number.isFinite(r.end)||r.end<=r.start||r.end>window.end||!Number.isFinite(r.value)||r.measured!==true)return null;
+  if(r.start!==cursor||!Number.isFinite(r.end)||r.end<=r.start||r.end>window.end||!Number.isFinite(r.value)||r.value<0||r.measured!==true)return null;
   cursor=r.end;sum+=r.value;
+  if(!Number.isFinite(sum))return null;
  }
  return cursor===window.end?sum:null;
 }
@@ -66,7 +68,12 @@ function setup(){
    try{const w=windowFor(input.value);const pretty=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
     renderReport(w);
     output.textContent=pretty.format(new Date(w.start))+' → '+pretty.format(new Date(w.end))+' · '+((w.end-w.start)/3600000)+' hours. '+(w.end>Date.now()?'Period not complete.':'No recorded readings connected.');
-   }catch(e){output.textContent=e.message;}
+   }catch(e){
+    panel.querySelector('#foxActualRows').replaceChildren();
+    const status=panel.querySelector('#foxActualReconciliation');
+    if(status)status.textContent='Choose a valid accounting date to view the report.';
+    output.textContent=e.message;
+   }
   };
   function renderReport(w){
    const body=panel.querySelector('#foxActualRows');body.replaceChildren();
@@ -101,3 +108,4 @@ function setup(){
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',init);else init();
 }
 })(typeof window!=='undefined'?window:globalThis);
+

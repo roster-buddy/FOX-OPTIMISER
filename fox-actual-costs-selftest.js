@@ -18,3 +18,12 @@ assert.equal(c.total(rows,w,w.end-1),null);
 assert.equal(c.total(rows.map(r=>({...r,measured:false})),w,w.end),null);
 assert.equal(c.total(rows.map(r=>({...r,value:0})),w,w.end),0);
 console.log('ACTUAL COSTS PASS: UK accounting boundaries, DST, missing/duplicate/forecast rejection and measured zero');
+
+
+// Reject malformed input without throwing or quietly dropping a crossing interval.
+for(const records of [null,{},[null],rows.map(r=>({...r,value:-1})),
+ [{...rows[0],start:w.start-1,end:w.start+1},...rows],
+ rows.map(r=>({...r,value:Number.MAX_VALUE}))])assert.equal(c.total(records,w,w.end),null);
+assert.equal(c.total(rows,w,NaN),null);
+assert.equal(c.total(rows,{start:w.end,end:w.start},w.end),null);
+assert.equal(c.total([...rows,{start:w.end,end:w.end+1,value:99,measured:true}],w,w.end),48);
