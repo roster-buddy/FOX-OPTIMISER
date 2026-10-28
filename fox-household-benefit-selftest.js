@@ -30,7 +30,7 @@ assert.equal(calc.savings.houseKwh,48);
 assert.equal(calc.savings.batteryKwh,24);
 assert(calc.forceExport.available);
 assert(Math.abs(calc.forceExport.value-1.20)<1e-10);
-assert.equal(calc.forceExport.total,4.8);
+assert(Math.abs(calc.forceExport.total-4.8)<1e-10);
 assert.equal(calc.forceNet.value,null,'Gross force revenue is not incremental profit');
 assert.equal(calc.economicSavings.value,null,'Solar export opportunity is separate');
 const r=report.build('2026-10-26',input,window.end);
