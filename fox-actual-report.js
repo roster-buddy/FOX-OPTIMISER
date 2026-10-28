@@ -33,11 +33,15 @@ function build(endDay,input,now){
   solarLedger.trace(input.solarStorageHistory,{verified:true,initial:input.solarOpeningLots}):
   {available:false,reason:'Verified solar/grid battery source history not connected'};
  const attributed=ledger.available?ledger.days.find(x=>x.day===endDay):null;
- const solarStorage=attributed?
+ const attributedReady=attributed&&exportCheck.available&&batteryExport.available&&
+  gridExport.available&&attributed.solarGridExportAcKwh<=batteryExport.total+1e-6&&
+  attributed.solarGridExportAcKwh<=gridExport.total+1e-6;
+ const solarStorage=attributedReady?
   {available:true,value:attributed.solarExportGainGbp,
    day:endDay,...attributed,method:ledger.method}:
-  {available:false,reason:ledger.available?
-   'No source-attributed solar/battery history for selected day':ledger.reason};
+  {available:false,reason:!attributed?(ledger.available?
+   'No source-attributed solar/battery history for selected day':ledger.reason):
+   'Battery-origin solar export needs reconciled Octopus meter and Fox ESS export readings'};
  const gridBalance=gridImport.available&&gridExport.available?
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
