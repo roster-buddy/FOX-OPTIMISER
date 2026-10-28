@@ -10,7 +10,7 @@ const validateDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
 const daysBetween=(a,b)=>(Date.parse(b+'T12:00:00Z')-Date.parse(a+'T12:00:00Z'))/86400000;
 const addDays=(a,days)=>new Date(Date.parse(a+'T12:00:00Z')+days*86400000).toISOString().slice(0,10);
 const unavailable=(reason,target=DEFAULT_TARGET_GBP)=>({available:false,target,reason,completeDays:0,
- batterySavedGbp:null,solarStorageGainGbp:null,netForceProfitGbp:null,totalBenefitGbp:null,remainingGbp:null,
+ batterySavedGbp:null,solarStorageGainGbp:null,directSolarUpliftGbp:null,netForceProfitGbp:null,totalBenefitGbp:null,remainingGbp:null,
  progressPct:null,forecast:null});
 function extract(reports){
  if(!Array.isArray(reports))return [];
@@ -18,12 +18,15 @@ function extract(reports){
   Number.isFinite(report.savings.batteryOnlySavingGbp)&&
   report?.solarStorage?.available===true&&
   Number.isFinite(report.solarStorage.houseSolarOpportunityGbp)&&
-  Number.isFinite(report.solarStorage.solarExportGainGbp)).map(report=>({
+  Number.isFinite(report.solarStorage.solarExportGainGbp)&&
+  report?.directSolarUplift?.available===true&&
+  Number.isFinite(report.directSolarUplift.value)).map(report=>({
   date:report.day,
   // Solar used to charge the battery could otherwise have earned the
   // historical direct export tariff. Deduct that share from house savings.
   batterySavingGbp:report.savings.batteryOnlySavingGbp-report.solarStorage.houseSolarOpportunityGbp,
   solarStorageGainGbp:report.solarStorage.solarExportGainGbp,
+  directSolarUpliftGbp:report.directSolarUplift.value,
   // Only non-solar incremental forced export profit can appear here:
   // generic forceNet could already include the solar storage benefit.
   incrementalForceProfitGbp:report.forceNet?.available&&report.forceNet.excludesSolarOrigin===true&&
@@ -42,13 +45,13 @@ function project(rows,remaining,asOf){
  if(months.size<2)return {available:false,reason:'At least two separate months are needed for a preliminary trend'};
  const recent=rows.slice(-Math.min(120,rows.length));
  const trend=recent.reduce((total,row)=>total+row.batterySavingGbp+(row.solarStorageGainGbp??0)+
-  (row.incrementalForceProfitGbp??0),0)/recent.length;
+  (row.incrementalForceProfitGbp??0)+(row.directSolarUpliftGbp??0),0)/recent.length;
  if(trend<=0)return {available:false,reason:'Recent net savings are not positive, so no reliable break-even date'};
  const seasonal=rows.length>=300&&months.size>=10;
  // Seasonal sample uses observed calendar months. Forecast only if at least
  // 14 independently verified days in a calendar month; otherwise use trend.
  const byMonth=Array.from({length:12},()=>[]);
- for(const row of rows)byMonth[Number(row.date.slice(5,7))-1].push(row.batterySavingGbp+(row.solarStorageGainGbp??0)+(row.incrementalForceProfitGbp??0));
+ for(const row of rows)byMonth[Number(row.date.slice(5,7))-1].push(row.batterySavingGbp+(row.solarStorageGainGbp??0)+(row.incrementalForceProfitGbp??0)+(row.directSolarUpliftGbp??0));
  const rates=byMonth.map(group=>group.length>=14?
   group.reduce((a,b)=>a+b,0)/group.length:null);
  function forecast(multiplier=1){
@@ -73,7 +76,8 @@ function analyse(entries,target=DEFAULT_TARGET_GBP,asOf=new Date().toISOString()
  const accepted=source.filter(r=>validateDate(r?.date)&&r.date<=asOf&&r.verified===true&&
   Number.isFinite(r.batterySavingGbp)&&
   (r.solarStorageGainGbp==null||Number.isFinite(r.solarStorageGainGbp))&&
-  (r.incrementalForceProfitGbp==null||Number.isFinite(r.incrementalForceProfitGbp)));
+  (r.incrementalForceProfitGbp==null||Number.isFinite(r.incrementalForceProfitGbp))&&
+  (r.directSolarUpliftGbp==null||(Number.isFinite(r.directSolarUpliftGbp)&&r.directSolarUpliftGbp>=0)));
  if(!accepted.length)return unavailable('Waiting for verified battery-to-house savings readings',target);
  const unique=new Map();
  for(const row of accepted)if(!unique.has(row.date))unique.set(row.date,row);
@@ -82,7 +86,8 @@ function analyse(entries,target=DEFAULT_TARGET_GBP,asOf=new Date().toISOString()
  const solarStorageGainGbp=rows.reduce((n,r)=>n+(r.solarStorageGainGbp??0),0);
  const netForceProfitGbp=rows.reduce((n,r)=>n+(r.incrementalForceProfitGbp??0),0);
  const confirmedForceDays=rows.filter(r=>r.incrementalForceProfitGbp!==null).length;
- const totalBenefitGbp=batterySavedGbp+solarStorageGainGbp+netForceProfitGbp;
+ const directSolarUpliftGbp=rows.reduce((n,r)=>n+(r.directSolarUpliftGbp??0),0);
+ const totalBenefitGbp=batterySavedGbp+solarStorageGainGbp+netForceProfitGbp+directSolarUpliftGbp;
  const remainingGbp=Math.max(0,target-totalBenefitGbp);
  const completeDays=rows.length,spanDays=daysBetween(rows[0].date,rows.at(-1).date)+1;
  const coverage=completeDays/spanDays;
@@ -90,7 +95,7 @@ function analyse(entries,target=DEFAULT_TARGET_GBP,asOf=new Date().toISOString()
   {available:true,kind:'achieved',date:rows.at(-1).date,earliest:null,latest:null,notes:'Verified subtotal reached the investment target'}:
   project(rows,remainingGbp,asOf);
  return {available:true,target,completeDays,firstDay:rows[0].date,lastDay:rows.at(-1).date,
-  spanDays,coverage,batterySavedGbp,solarStorageGainGbp,netForceProfitGbp,confirmedForceDays,
+  spanDays,coverage,batterySavedGbp,solarStorageGainGbp,directSolarUpliftGbp,netForceProfitGbp,confirmedForceDays,
   totalBenefitGbp,remainingGbp,progressPct:Math.max(0,Math.min(100,totalBenefitGbp/target*100)),
   forecast,reason:spanDays>completeDays?'Incomplete history: valid-day subtotal only; gaps are not zero':'Verified-day subtotal, not lifetime savings unless full history is imported'};
 }
