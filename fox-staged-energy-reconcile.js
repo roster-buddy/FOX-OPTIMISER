@@ -45,6 +45,8 @@ function reconcile(batches,window,now){
    'Solar battery charging plus direct solar export exceeds generation');
   check(r.solarStoredDc<=r.solarToBatteryAc+EPS,
    'Solar stored DC exceeds solar charging AC input');
+  check(r.gridStoredDc<=r.batteryGridCharge+EPS,
+   'Grid stored DC exceeds grid battery charging AC input');
   check(Math.abs(r.batteryHouseDc+r.batteryGridDc-r.batteryDischargeDc)<=EPS,
    'Battery discharge DC does not split into house and grid paths');
   check(r.batteryHouseAc<=r.batteryHouseDc+EPS,
