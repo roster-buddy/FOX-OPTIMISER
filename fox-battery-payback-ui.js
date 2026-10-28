@@ -43,11 +43,11 @@ function setup(){
   const entries=core.extract(reports),asOf=ukDay();
   const state=core.analyse(entries,core.DEFAULT_TARGET_GBP,asOf);
   if(!state.available){
-   get('foxPaybackMonth').textContent='—';
-   get('foxPaybackSolarMonth').textContent='—';
-   get('foxPaybackSolarTotal').textContent='—';
-   get('foxPaybackDirectSolar').textContent='—';
-   get('foxPaybackSaved').textContent='—';
+   get('foxPaybackMonth').textContent='Awaiting readings';
+   get('foxPaybackSolarMonth').textContent='Awaiting readings';
+   get('foxPaybackSolarTotal').textContent='Awaiting readings';
+   get('foxPaybackDirectSolar').textContent='Awaiting readings';
+   get('foxPaybackSaved').textContent='Awaiting readings';
    get('foxPaybackRemaining').textContent=money(core.DEFAULT_TARGET_GBP);
    get('foxPaybackDate').textContent='Learning…';
    get('foxPaybackStatus').textContent=state.reason+
@@ -62,8 +62,8 @@ function setup(){
    .reduce((n,x)=>n+x.batterySavingGbp,0);
   const monthlyCount=entries.filter(x=>x.date.slice(0,7)===month).length;
   const solarMonth=entries.filter(x=>x.date.slice(0,7)===month).reduce((n,x)=>n+(x.solarStorageGainGbp??0),0);
-  get('foxPaybackMonth').textContent=monthlyCount?money(batteryMonth):'—';
-  get('foxPaybackSolarMonth').textContent=monthlyCount?money(solarMonth):'—';
+  get('foxPaybackMonth').textContent=monthlyCount?money(batteryMonth):'Awaiting readings';
+  get('foxPaybackSolarMonth').textContent=monthlyCount?money(solarMonth):'Awaiting readings';
   get('foxPaybackSolarTotal').textContent=money(state.solarStorageGainGbp);
   get('foxPaybackDirectSolar').textContent=money(state.directSolarUpliftGbp);
   get('foxPaybackSaved').textContent=money(state.totalBenefitGbp);

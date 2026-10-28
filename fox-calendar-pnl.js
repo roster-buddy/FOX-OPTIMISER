@@ -55,11 +55,11 @@ function render(){
  const title=document.createElement('strong');title.textContent=s.net===null?'Monthly P&L · awaiting readings':(s.complete?'Monthly P&L · ':'Recorded-day subtotal · ')+cash(s.net);summary.append(title);
  const detail=document.createElement('p');detail.textContent=s.count===0?'No complete recorded days yet.':s.count+' of '+s.days+' days recorded · Export '+cash(s.exports)+' − import '+cash(s.imports)+(s.complete?'':'. Incomplete month; missing days are excluded.');summary.append(detail);
  const extra=document.createElement('p');extra.className='fox-month-benefits';
- extra.textContent='Household bill savings: '+(benefit.savings===null?'—':cash(benefit.savings))+
+ extra.textContent='Household bill savings: '+(benefit.savings===null?'Awaiting readings':cash(benefit.savings))+
   ' ('+benefit.savingsDays+'/'+benefit.days+' days) · Force-discharge export earned: '+
-  (benefit.forced===null?'—':cash(benefit.forced))+' ('+benefit.forcedDays+'/'+benefit.days+
+  (benefit.forced===null?'Awaiting readings':cash(benefit.forced))+' ('+benefit.forcedDays+'/'+benefit.days+
   ' days) · Stored solar export gain above direct-export alternative: '+
-  (benefit.solarGain===null?'—':cash(benefit.solarGain))+' ('+benefit.solarDays+'/'+benefit.days+
+  (benefit.solarGain===null?'Awaiting readings':cash(benefit.solarGain))+' ('+benefit.solarDays+'/'+benefit.days+
   ' days). Gross force export is already within export P&L; never add it twice.';
  summary.append(extra);
  const offset=(new Date(year,month,1).getDay()+6)%7;
@@ -69,7 +69,7 @@ function render(){
   const amount=cell.children[1];if(!amount)continue;
   const value=dayResult(reports.get(key));
   cell.dataset.pnl=state(value);amount.className='fox-day-pnl';
-  amount.textContent=value===null?'—':cash(value);
+  amount.textContent=value===null?'Awaiting readings':cash(value);
   const label=value===null?'Recorded P&L unavailable':value>0?'Net earned '+cash(value):value<0?'Net cost '+cash(-value):'Break even £0.00';
   cell.title=key+' · '+label+' · Open Happy Hour / Octopus sessions';
   cell.setAttribute('aria-label',key+', '+label+'. Open Happy Hour and Octopus sessions');
@@ -83,7 +83,7 @@ function setup(){
  calendar.querySelector('h3').after(intro);
  const summary=document.createElement('div');summary.id='foxCalendarMonthPnl';summary.setAttribute('aria-live','polite');
  const grid=document.getElementById('v4CalendarGrid');grid.before(summary);
- const legend=document.createElement('p');legend.id='foxCalendarLegend';legend.className='note';legend.textContent='Green: net earned · Red: net cost · —: readings unavailable. Tap a date to record Happy Hours or other Octopus sessions you have joined.';grid.after(legend);
+ const legend=document.createElement('p');legend.id='foxCalendarLegend';legend.className='note';legend.textContent='Green: net earned · Red: net cost · Awaiting readings: no verified data yet. Tap a date to record Happy Hours or other Octopus sessions you have joined.';grid.after(legend);
  const actual=document.getElementById('foxActualCosts');if(actual&&actual.parentElement===calendar.parentElement)actual.before(calendar);
  const original=v4RenderCalendar;
  v4RenderCalendar=function(...args){original(...args);render();};
@@ -93,7 +93,7 @@ function setup(){
 root.FoxCalendarPnl={...api,
  getReport(endDay){return reports.get(endDay)||null;},
  // Verified in-memory accounting days only. Does not include demos or guessed readings.
- getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet,solarStorage:entry[1].solarStorage}));},
+ getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet,solarStorage:entry[1].solarStorage,directSolarUplift:entry[1].directSolarUplift}));},
  recordDay(endDay,input,now=Date.now()){
  const report=root.FoxActualReport.build(endDay,input,now);
  reports.set(endDay,report);render();

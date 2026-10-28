@@ -109,11 +109,11 @@ function setup(){
    const report=root.FoxActualReport?.build(input.value,{},Date.now());
    currentReport=report;
    if(download)download.disabled=!root.FoxActualReport?.csv(report);
-   const money=x=>x?.available&&Number.isFinite(x.value)?((x.value<0?'−£':'£')+Math.abs(x.value).toFixed(2)):'—';
+   const money=x=>x?.available&&Number.isFinite(x.value)?((x.value<0?'−£':'£')+Math.abs(x.value).toFixed(2)):'Awaiting readings';
    const household=report?.savings,force=report?.forceExport,discharge=report?.dischargeFlow,solar=report?.solarStorage;
    const fill=(selector,value)=>{const el=panel.querySelector(selector);if(el)el.textContent=value;};
-   fill('#foxHouseBaseline',household?.available?'£'+household.baselineCost.toFixed(2):'—');
-   fill('#foxHouseActual',household?.available?'£'+household.actualCost.toFixed(2):'—');
+   fill('#foxHouseBaseline',household?.available?'£'+household.baselineCost.toFixed(2):'Awaiting readings');
+   fill('#foxHouseActual',household?.available?'£'+household.actualCost.toFixed(2):'Awaiting readings');
    fill('#foxHouseSaving',money(household));
    fill('#foxForcedEarned',money(force));
    fill('#foxSolarGain',money(solar));
@@ -126,9 +126,9 @@ function setup(){
     ' in foregone direct solar export and '+money({available:true,value:solar.solarExportWearGbp})+
     ' in recorded/confirmed wear allowance. Solar used for household supply also forgoes direct export and is deducted in the battery payback tracker.':
     'Solar-stored export gain unavailable: '+(solar?.reason||'Waiting for validated readings'));
-   fill('#foxDischargeDC',discharge?.available?discharge.dcKwh.toFixed(2)+' kWh':'—');
-   fill('#foxDischargeAC',discharge?.available?discharge.acKwh.toFixed(2)+' kWh':'—');
-   fill('#foxDischargeLoss',discharge?.available?discharge.lossKwh.toFixed(2)+' kWh':'—');
+   fill('#foxDischargeDC',discharge?.available?discharge.dcKwh.toFixed(2)+' kWh':'Awaiting readings');
+   fill('#foxDischargeAC',discharge?.available?discharge.acKwh.toFixed(2)+' kWh':'Awaiting readings');
+   fill('#foxDischargeLoss',discharge?.available?discharge.lossKwh.toFixed(2)+' kWh':'Awaiting readings');
    fill('#foxDischargeStatus',discharge?.available?
     'DC-to-AC difference between verified battery-only measurement points. May include inverter auxiliary use. Not the difference between battery energy and metered grid export.':
     'Discharge comparison unavailable: '+(discharge?.reason||'Waiting for readings'));
