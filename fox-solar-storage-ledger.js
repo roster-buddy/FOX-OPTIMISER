@@ -40,10 +40,12 @@ function trace(rows,opts={}){
   }
   previous=row.day;previousEnd=intervals?row.end:null;
   if(!opts.simulation&&row.verified!==true)return fail('Unverified solar and battery source-flow day '+row.day);
-  const fields=['solarInputAcKwh','solarStoredDcKwh','gridStoredDcKwh','houseDischargedDcKwh',
-   'exportDischargedDcKwh','houseDeliveredAcKwh','exportToGridAcKwh',
-   'directExportRateGbpPerKwh','achievedExportRateGbpPerKwh','wearGbpPerExportKwh'];
-  if(fields.some(k=>!finite(row[k])))return fail('Missing or invalid source/price/energy data on '+row.day);
+  const energy=['solarInputAcKwh','solarStoredDcKwh','gridStoredDcKwh','houseDischargedDcKwh',
+   'exportDischargedDcKwh','houseDeliveredAcKwh','exportToGridAcKwh','wearGbpPerExportKwh'];
+  if(energy.some(k=>!finite(row[k]))||
+   !Number.isFinite(row.directExportRateGbpPerKwh)||
+   !Number.isFinite(row.achievedExportRateGbpPerKwh))
+   return fail('Missing or invalid source/price/energy data on '+row.day);
   if(row.solarStoredDcKwh>row.solarInputAcKwh+1e-6)return fail('Solar storage exceeds diverted solar before charging losses');
   if(row.houseDeliveredAcKwh>row.houseDischargedDcKwh+1e-6||
     row.exportToGridAcKwh>row.exportDischargedDcKwh+1e-6)
