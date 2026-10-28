@@ -102,7 +102,7 @@ function setup(){
     '. Total meter import cost, including EV '+money(d.totalGridImportCostGbp)+
     ', makes grid cash balance '+money(d.netGridCashGbp)+
     '. EV alone costs '+money(d.evImportCostGbp)+
-    '. A weighted stored-energy cost pool carries forward across days. Solar stored energy has zero purchase cost, but foregone solar export is not deducted.');
+    '. A weighted stored-energy purchase-cost pool carries forward across days. The £4,800 recovery demonstration additionally deducts foregone direct solar export value. Solar is retained for export under an illustrative source-allocation assumption, not physically identifiable electrons.');
  }
  function render(){
   const t=sample.totals;
