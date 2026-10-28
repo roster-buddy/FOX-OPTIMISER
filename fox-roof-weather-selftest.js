@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const core=require('./fox-roof-weather-core.js');
 const site={latitude:52.5,longitude:-2.1,solarKwp:2.01,bearing:110,tilt:35,
  performanceRatio:.82,inverterAcKw:1.5,uncertaintyPct:20};
-assert.equal(core.tomorrow(Date.parse('2026-10-28T23:30:00Z')),'2026-10-30','UK date already advanced past UTC midnight');
+assert.equal(core.tomorrow(Date.parse('2026-07-28T23:30:00Z')),'2026-07-30','UK date already advanced past UTC midnight');
 assert.equal(core.tomorrow(Date.parse('2026-10-28T12:00:00Z')),'2026-10-29');
 assert.equal(core.tomorrow(Date.parse('2026-03-29T00:30:00Z')),'2026-03-30','DST spring transition');
 assert.equal(core.tomorrow(Date.parse('2026-10-25T00:30:00Z')),'2026-10-26','DST autumn transition');
