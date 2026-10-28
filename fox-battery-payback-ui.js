@@ -29,8 +29,10 @@ function setup(){
  '<p id="foxPaybackStatus" class="note" aria-live="polite">Awaiting validated battery costs and household readings. No forecast is possible yet.</p>',
  '<p class="note">This is a bill-savings recovery target, not a complete financial ROI: it does not deduct financing, maintenance or solar export opportunity cost. Until historical data is imported, any subtotal starts with the first verified day rather than your installation date.</p>'
  ].join('');
- const target=actual.querySelector('#foxHouseBenefit');
- if(target)target.after(box);else actual.append(box);
+ // Financial recovery is the headline: place it before the separate DEMO,
+ // date controls, technical ledger and loss measurements.
+ const heading=actual.querySelector('h2');
+ if(heading)heading.after(box);else actual.prepend(box);
  const get=id=>box.querySelector('#'+id);
  const progress=box.querySelector('.fox-payback-track');
  function render(){
