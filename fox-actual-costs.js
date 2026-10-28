@@ -62,7 +62,6 @@ function setup(){
    <p id="foxForcedStatus" class="note">Force-discharge earnings: awaiting verified battery-to-grid attribution.</p>
    <details id="foxDischargeDetails" class="foxDisclosure foxTechnicalDisclosure">
     <summary>Battery discharge measurements · DC / AC / losses</summary>
-   <h4>Battery discharge measurements</h4>
    <div class="fox-benefit-grid fox-discharge-grid">
     <div><small>Battery DC discharge</small><strong id="foxDischargeDC">—</strong></div>
     <div><small>Battery-only inverter AC output</small><strong id="foxDischargeAC">—</strong></div>
