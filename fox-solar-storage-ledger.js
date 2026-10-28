@@ -23,13 +23,22 @@ function trace(rows,opts={}){
  if(solarDc===0&&solarOpp>1e-9)return fail('Opening solar opportunity cost without stored solar');
  if(solarDc>0&&!opts.initial?.sourceHistoryVerified&&!opts.simulation)
   return fail('Opening solar battery inventory must have verified origin and opportunity value');
- const days=[];
- let previous='';
+ const records=[];
+ let previous='',previousEnd=null;
  for(const row of rows){
   if(!row||typeof row.day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(row.day)||
-    row.day<=previous||Number.isNaN(Date.parse(row.day+'T12:00:00Z')))
-   return fail('Daily flow records must be in chronological order with valid distinct dates');
-  previous=row.day;
+    row.day<previous||Number.isNaN(Date.parse(row.day+'T12:00:00Z')))
+   return fail('Source-flow records must be chronological with valid accounting dates');
+  const intervals=Number.isFinite(row.start)&&Number.isFinite(row.end)&&row.end>row.start;
+  // Repeated dates are allowed only for measured time-aligned intervals,
+  // never for unordered daily summaries.
+  if(row.day===previous && (!intervals||previousEnd===null||row.start<previousEnd))
+   return fail('Repeated accounting day requires strictly ordered, nonoverlapping meter intervals');
+  if(row.start!==undefined||row.end!==undefined){
+   if(!intervals)return fail('Invalid source-flow time interval');
+   if(previousEnd!==null&&row.start<previousEnd)return fail('Overlapping solar-source flow intervals');
+  }
+  previous=row.day;previousEnd=intervals?row.end:null;
   if(!opts.simulation&&row.verified!==true)return fail('Unverified solar and battery source-flow day '+row.day);
   const fields=['solarInputAcKwh','solarStoredDcKwh','gridStoredDcKwh','houseDischargedDcKwh',
    'exportDischargedDcKwh','houseDeliveredAcKwh','exportToGridAcKwh',
@@ -83,10 +92,29 @@ function trace(rows,opts={}){
    solarExportDischargeLossKwh:solarExportDc-solarGridExportAcKwh,
    openingSolarDcKwh:previousSolar
   };
-  days.push(data);
+  records.push(data);
+ }
+ const days=[];
+ const sumKeys=['solarChargeInputAcKwh','solarChargeLossKwh','solarGridExportAcKwh',
+  'solarDischargeDcToGridKwh','solarHouseDischargeDcKwh',
+  'solarExportDischargeLossKwh','exportSolarOpportunityGbp','houseSolarOpportunityGbp',
+  'solarGridRevenueGbp','solarExportWearGbp','solarExportGainBeforeWearGbp','solarExportGainGbp'];
+ for(const record of records){
+  let latest=days.at(-1);
+  if(!latest||latest.day!==record.day){
+   latest={day:record.day,intervalCount:0,openingSolarDcKwh:record.openingSolarDcKwh,
+    provenance:record.provenance};
+   for(const key of sumKeys)latest[key]=0;
+   days.push(latest);
+  }
+  for(const key of sumKeys)latest[key]+=record[key];
+  latest.intervalCount++;
+  latest.closingSolarDcKwh=record.closingSolarDcKwh;
+  latest.closingGridDcKwh=record.closingGridDcKwh;
+  latest.closingSolarOpportunityGbp=record.closingSolarOpportunityGbp;
  }
  const sum=key=>days.reduce((n,d)=>n+d[key],0);
- return {available:true,reason:null,days,
+ return {available:true,reason:null,days,records,
   totals:{solarChargeInputAcKwh:sum('solarChargeInputAcKwh'),
    solarGridExportAcKwh:sum('solarGridExportAcKwh'),
    solarGridRevenueGbp:sum('solarGridRevenueGbp'),
