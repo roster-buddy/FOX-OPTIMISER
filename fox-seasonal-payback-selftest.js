@@ -1,0 +1,36 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const core=require('./fox-battery-payback-core.js');
+const end='2026-10-28';
+const start=Date.parse('2025-10-29T12:00:00Z');
+const rows=Array.from({length:365},(_,i)=>{
+ const date=new Date(start+i*86400000).toISOString().slice(0,10);
+ const month=Number(date.slice(5,7));
+ return {date,verified:true,batterySavingGbp:month>=5&&month<=8?2:.5,
+  solarStorageGainGbp:0,directSolarUpliftGbp:0,incrementalForceProfitGbp:null};
+});
+let state=core.analyse(rows,4800,end);
+assert(state.forecast.available);
+assert.equal(state.forecast.kind,'seasonally-informed');
+assert.equal(state.forecast.monthsCovered,12);
+assert.equal(state.forecast.seasonalEligible,true);
+assert.equal(state.forecast.seasonalDailyRatesGbp.length,12);
+assert(state.forecast.seasonalDailyRatesGbp[6]>state.forecast.seasonalDailyRatesGbp[0]);
+assert(state.forecast.earliest<state.forecast.date);
+assert(state.forecast.latest>state.forecast.date);
+const noJanuary=rows.filter(r=>r.date.slice(5,7)!=='01');
+state=core.analyse(noJanuary,4800,end);
+assert(state.forecast.available,'Coverage remains sufficient for a preliminary trend');
+assert.equal(state.forecast.kind,'preliminary trend','Missing January must not be treated as measured seasonality');
+assert.equal(state.forecast.monthsCovered,11);
+assert.equal(state.forecast.seasonalDailyRatesGbp,null);
+state=core.analyse(rows.slice(-300),4800,end);
+assert(state.forecast.available);
+assert.equal(state.forecast.kind,'preliminary trend','Short history must not claim annual seasonality');
+assert.equal(state.forecast.seasonalEligible,false);
+const ui=fs.readFileSync('fox-battery-payback-ui.js','utf8');
+assert(ui.includes('foxPaybackSeasonStatus'));
+assert(ui.includes('sensitivity dates'));
+assert(!ui.includes('FoxFinancialDemoCore'));
+console.log('SEASONAL PAYBACK PASS: complete annual sampling gate, missing-month fallback, bounded sensitivity and no demo contamination');
