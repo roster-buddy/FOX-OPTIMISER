@@ -43,6 +43,14 @@ function calculate(kind='typical'){
   annualBenefitGbp:annual,monthly:rows,paybackMonth:date,monthsToPayback:date?elapsedMonths:null,
   startingMonth:'2026-11',basis:'Synthetic October 2026 financial ledger and hypothetical seasonal factors; not actual readings or validated solar/weather forecast'};
 }
-const api={calculate,SCENARIOS,MONTHS,SOLAR_FACTORS};
+function compare(){
+ const scenarios=['low','typical','high'].map(kind=>calculate(kind));
+ return {type:'SIMULATION_ONLY',scenarios,
+  monthly:MONTHS.map((name,i)=>({name,month:i+1,
+   low:scenarios[0].monthly[i].benefitGbp,
+   typical:scenarios[1].monthly[i].benefitGbp,
+   high:scenarios[2].monthly[i].benefitGbp}))};
+}
+const api={calculate,compare,SCENARIOS,MONTHS,SOLAR_FACTORS};
 if(node)module.exports=api;else root.FoxSeasonalDemoCore=api;
 })(typeof window!=='undefined'?window:globalThis);
