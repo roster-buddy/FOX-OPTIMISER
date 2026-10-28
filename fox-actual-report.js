@@ -7,6 +7,7 @@ const recorded=node?require('./fox-recorded-data.js'):root.FoxRecordedData;
 const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefit;
 const discharge=node?require('./fox-discharge-flow.js'):root.FoxDischargeFlow;
 const solarLedger=node?require('./fox-solar-storage-ledger.js'):root.FoxSolarStorageLedger;
+const solarMeters=node?require('./fox-solar-meter-reconcile.js'):root.FoxSolarMeterReconcile;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
@@ -29,16 +30,22 @@ function build(endDay,input,now){
  const dischargeFlow=discharge.calculate(input,window,now);
  // All battery source history (including the opening inventory) must be
  // supplied by a verified adapter before solar-origin gains can be claimed.
- const ledger=input?.solarStorageHistory?
-  solarLedger.trace(input.solarStorageHistory,{verified:true,initial:input.solarOpeningLots}):
-  {available:false,reason:'Verified solar/grid battery source history not connected'};
+ const measuredSolar=solarMeters.fromMeters(input,window,now,endDay);
+ const prior=Array.isArray(input?.solarStorageHistory)?
+  input.solarStorageHistory.filter(x=>x.day<endDay):[];
+ const inventory=input?.solarOpeningLots;
+ const ledger=measuredSolar.available&&inventory?.sourceHistoryVerified===true?
+  solarLedger.trace([...prior,...measuredSolar.rows],
+   {verified:true,initial:inventory}):
+  {available:false,reason:!measuredSolar.available?measuredSolar.reason:
+   'Verified opening solar/grid battery energy and direct-export opportunity inventory required'};
  const attributed=ledger.available?ledger.days.find(x=>x.day===endDay):null;
  const attributedReady=attributed&&exportCheck.available&&batteryExport.available&&
   gridExport.available&&attributed.solarGridExportAcKwh<=batteryExport.total+1e-6&&
   attributed.solarGridExportAcKwh<=gridExport.total+1e-6;
  const solarStorage=attributedReady?
   {available:true,value:attributed.solarExportGainGbp,
-   day:endDay,...attributed,method:ledger.method}:
+   day:endDay,...attributed,dcToAc:measuredSolar.losses,method:ledger.method}:
   {available:false,reason:!attributed?(ledger.available?
    'No source-attributed solar/battery history for selected day':ledger.reason):
    'Battery-origin solar export needs reconciled Octopus meter and Fox ESS export readings'};
