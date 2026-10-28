@@ -29,7 +29,7 @@ function setup(){
  '</div>',
  '<div class="fox-payback-track" role="progressbar" aria-label="Verified battery investment recovery" aria-valuemin="0" aria-valuemax="4800" aria-valuenow="0" aria-valuetext="Awaiting verified readings"><div id="foxPaybackFill"></div></div>',
  '<p id="foxPaybackStatus" class="note" aria-live="polite">Awaiting validated battery costs and household readings. No forecast is possible yet.</p>',
- '<p class="note">Solar stored and exported is compared against what the original solar energy could have earned via direct export (12p/kWh only where that historical baseline is confirmed). Charging/discharging losses and validated wear are reflected in the solar gain. Source provenance is model-attributed, not physically separable electrons. Financing, maintenance and battery replacement costs are not included. Historical readings must be imported for full-lifetime recovery.</p>'
+ '<p class="note">Solar stored and exported is compared against what the original solar energy could have earned via direct export (12p/kWh only where that historical baseline is confirmed). Charging/discharging losses and validated wear are reflected in the solar gain. Solar-retained allocation assumes household discharge uses grid-origin storage first and later export draws remaining solar-origin storage first; this is an economic scenario, not direct electron measurement. Financing, maintenance and battery replacement costs are not included. Historical readings must be imported for full-lifetime recovery.</p>'
  ].join('');
  // Financial recovery is the headline: place it before the separate DEMO,
  // date controls, technical ledger and loss measurements.
