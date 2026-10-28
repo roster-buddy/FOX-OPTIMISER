@@ -31,7 +31,7 @@ for(const [day,slots] of [['2026-10-29',24],['2026-03-29',23],['2026-10-25',25]]
 const south=core.estimate(weather('2026-10-29'),'2026-10-29',{...site,bearing:180});
 assert.equal(south.bearing,180);
 const broken=weather('2026-10-29');
-broken.hourly.global_tilted_irradiance[73]=null;
+broken.hourly.global_tilted_irradiance[50]=null;
 assert.throws(()=>core.estimate(broken,'2026-10-29',site));
 assert.throws(()=>core.estimate({hourly:{time:[0],global_tilted_irradiance:[100]}},'2026-10-29',site));
 assert.throws(()=>core.validate({...site,latitude:Infinity}));
