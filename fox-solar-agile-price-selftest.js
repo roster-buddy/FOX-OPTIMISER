@@ -29,7 +29,7 @@ const input={
 const metered=meters.fromMeters(input,window,window.end,day);
 assert(metered.available,metered.reason);
 assert.equal(metered.rows.length,48);
-assert.equal(metered.rows[2].achievedExportRateGbpPerKwh,.29800000000000004);
+assert(Math.abs(metered.rows[2].achievedExportRateGbpPerKwh-.298)<1e-10);
 assert.equal(metered.rows[3].achievedExportRateGbpPerKwh,.08);
 const held=ledger.trace(metered.rows,{verified:true,allocationMethod:ledger.RETAIN_SOLAR,
  initial:{solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0,sourceHistoryVerified:true}});
