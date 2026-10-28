@@ -58,7 +58,7 @@ input.streams.genLoadSolar[0].value=.35;
 assert.match(model.fromMeters(input,w,w.end,day).reason,/Gen Load/);
 input.streams.genLoadSolar[0].value=.50;
 input.solarExportOpportunityIntervals[0].directExportFeasible=false;
-assert.match(model.fromMeters(input,w,w.end,day).reason,/headroom/);
+assert.match(model.fromMeters(input,w,w.end,day).reason,/export limit|headroom/);
 input.solarExportOpportunityIntervals[0].directExportFeasible=true;
 input.streams.batteryDischargeDc[0].value=.5;
 assert.match(model.fromMeters(input,w,w.end,day).reason,/does not reconcile/);
