@@ -114,6 +114,8 @@ function setup(){
   render();
  });
 }
-if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',setup);
+// Deferred scripts can execute while the document is 'interactive', before
+// fox-actual-costs.js has created its panel on DOMContentLoaded.
+if(doc.readyState!=='complete')doc.addEventListener('DOMContentLoaded',setup);
 else setup();
 })(typeof window!=='undefined'?window:globalThis);
