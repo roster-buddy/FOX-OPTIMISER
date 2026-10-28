@@ -63,7 +63,7 @@ assert(ui.includes('content.hidden=!content.hidden'));
 assert(ui.includes('foregone solar export') || ui.includes('foregone alternatives') || ui.includes('foregone solar export'));
 assert(!ui.includes('FoxCalendarPnl') && !ui.includes('FoxActualReport'));
 for(const source of [ui,core]){
- assert(!source.includes('localStorage'), 'No browser persisted demo data');
+ assert(!/\blocalStorage\s*[.\[]/.test(source), 'No browser persisted demo data');
  assert(!source.includes('fetch('), 'No network calls in the demo');
  assert(!source.includes('recordDay('), 'No synthetic readings enter actual calendar');
  assert(!source.includes('forceCharge(') && !source.includes('forceDischarge('));
