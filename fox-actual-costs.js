@@ -120,6 +120,8 @@ function setup(){
    fill('#foxSolarStatus',solar?.available?
     'Verified source attribution with proportional battery origin: solar-origin grid export '+
     solar.solarGridExportAcKwh.toFixed(2)+' kWh earned '+money({available:true,value:solar.solarGridRevenueGbp})+
+    '. Total battery DC-to-AC difference this day '+solar.dcToAc.batteryDischargingKwh.toFixed(2)+
+    ' kWh (house use accounted for separately); actual metered export '+solar.dcToAc.meteredGridExportKwh.toFixed(2)+' kWh'+
     ', minus '+money({available:true,value:solar.exportSolarOpportunityGbp})+
     ' in foregone direct solar export and '+money({available:true,value:solar.solarExportWearGbp})+
     ' in recorded/confirmed wear allowance. Solar used for household supply also forgoes direct export and is deducted in the battery payback tracker.':
