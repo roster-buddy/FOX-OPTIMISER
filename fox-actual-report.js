@@ -6,6 +6,7 @@ const dates=node?require('./fox-actual-costs.js'):root.FoxActualCosts;
 const recorded=node?require('./fox-recorded-data.js'):root.FoxRecordedData;
 const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefit;
 const discharge=node?require('./fox-discharge-flow.js'):root.FoxDischargeFlow;
+const solarLedger=node?require('./fox-solar-storage-ledger.js'):root.FoxSolarStorageLedger;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
@@ -26,11 +27,22 @@ function build(endDay,input,now){
   unavailable(importCheck.reason||'Complete export earnings, battery charging and EV charging costs required');
  const household=benefit.build(window,input,now);
  const dischargeFlow=discharge.calculate(input,window,now);
+ // All battery source history (including the opening inventory) must be
+ // supplied by a verified adapter before solar-origin gains can be claimed.
+ const ledger=input?.solarStorageHistory?
+  solarLedger.trace(input.solarStorageHistory,{verified:true,initial:input.solarOpeningLots}):
+  {available:false,reason:'Verified solar/grid battery source history not connected'};
+ const attributed=ledger.available?ledger.days.find(x=>x.day===endDay):null;
+ const solarStorage=attributed?
+  {available:true,value:attributed.solarExportGainGbp,
+   day:endDay,...attributed,method:ledger.method}:
+  {available:false,reason:ledger.available?
+   'No source-attributed solar/battery history for selected day':ledger.reason};
  const gridBalance=gridImport.available&&gridExport.available?
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
  return {importCheck,exportCheck,window,gridImport,gridExport,batteryCharge,evCharge,houseGrid,solarExport,batteryExport,cashBalance,gridBalance,
-  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,
+  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,solarStorage,
   standingCharge:unavailable('Historical standing charge not connected')};
 }
 // Compare matching measured intervals; never spread energy uniformly to force a match.
