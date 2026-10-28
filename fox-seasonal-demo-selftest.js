@@ -35,11 +35,32 @@ for(let i=0;i<12;i++){
  assert.equal(month.typical,mid.monthly[i].benefitGbp);
  assert.equal(month.high,high.monthly[i].benefitGbp);
 }
+// Default settings must preserve the previous deterministic scenario figures.
+assert.deepEqual(core.calculate('typical',core.DEFAULTS),mid);
+assert.deepEqual(core.compare(core.DEFAULTS),comparison);
+assert.equal(core.DEFAULTS.solarKwp,2.01);
+assert.equal(core.DEFAULTS.cheapImportPence,3.4965);
+assert.equal(core.DEFAULTS.peakImportPence,23.2995);
+const larger=core.calculate('typical',{solarKwp:4.02});
+assert(larger.monthly[5].solarFactor>mid.monthly[5].solarFactor);
+assert(larger.monthly[5].directSolarGbp>mid.monthly[5].directSolarGbp);
+const higherPeak=core.calculate('typical',{peakImportPence:30});
+assert(higherPeak.annualBenefitGbp>mid.annualBenefitGbp);
+const higherCheap=core.calculate('typical',{cheapImportPence:10});
+assert(higherCheap.annualBenefitGbp<mid.annualBenefitGbp);
+assert.equal(core.compare({solarKwp:4.02}).scenarios[1].annualBenefitGbp,larger.annualBenefitGbp);
+for(const options of [{solarKwp:0},{solarKwp:NaN},{solarKwp:Infinity},
+ {cheapImportPence:-1},{peakImportPence:101},{solarKwp:'2.01'},null])
+ assert.throws(()=>core.calculate('typical',options));
 assert.throws(()=>core.calculate('actual'));
 const ui=fs.readFileSync('fox-seasonal-demo-ui.js','utf8');
 assert(ui.includes('NOT actual Fox ESS data'));
 assert(ui.includes('foxSeasonalCompareRows'));
 assert(ui.includes('foxSeasonalBars'));
+for(const id of ['foxSeasonalKwp','foxSeasonalCheap','foxSeasonalPeak','foxSeasonalReset','foxSeasonalInputStatus'])
+ assert(ui.includes(id),'Missing interactive installation input '+id);
+assert(ui.includes('Roof bearing 110°'));
+assert(ui.includes('not used in the calculation'));
 assert(ui.includes('foxDemoContent'),'Seasonal demo must be nested in the opt-in demonstration');
 for(const file of ['fox-seasonal-demo-core.js','fox-seasonal-demo-ui.js']){
  const source=fs.readFileSync(file,'utf8');
