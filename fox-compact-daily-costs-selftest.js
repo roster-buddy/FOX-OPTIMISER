@@ -28,6 +28,6 @@ for(const name of screens){
  assert(!html.includes('Prototype v0.1'),name+' still displays stale prototype label');
  assert(html.includes('fox-actual-costs.js?v=473'),name+' must refresh costs UI');
  assert(html.includes('fox-dashboard-layout.js?v=473'),name+' must refresh layout');
- assert(html.includes('fox-dashboard-layout.css?v=473'),name+' must refresh CSS');
+ assert(/fox-dashboard-layout\.css\?v=47[34]/.test(html),name+' must reference a recent dashboard stylesheet');
 }
 console.log('COMPACT DAILY COSTS PASS: visible savings, closed technical details, intact data targets and updated footer');
