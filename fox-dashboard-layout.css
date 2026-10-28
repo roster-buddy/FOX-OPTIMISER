@@ -121,3 +121,9 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxFinancialDemo .fox-demo-stats>div:nth-child(3){border-color:#b48a4b}
 @media(max-width:740px){#foxBatteryPayback .fox-payback-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxBatteryPayback .fox-payback-stats strong{font-size:18px}#foxBatteryPayback .fox-payback-title{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){#foxBatteryPayback #foxPaybackFill{transition:none}}
+
+#foxSolarChoiceDemo{margin:16px 0;padding:16px;border:1px solid #b58a50;border-radius:10px;background:#30291f}
+#foxSolarChoiceDemo .fox-choice-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#foxSolarChoiceDemo input{display:block;width:100%;box-sizing:border-box;margin-top:6px}
+#foxSolarChoiceDemo .fox-choice-result{font-weight:700}
+@media(max-width:580px){#foxSolarChoiceDemo .fox-choice-inputs{grid-template-columns:1fr}}
