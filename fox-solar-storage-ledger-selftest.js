@@ -9,7 +9,8 @@ const solarOne={
  houseDeliveredAcKwh:0,exportToGridAcKwh:4.7,
  directExportRateGbpPerKwh:0.12,achievedExportRateGbpPerKwh:0.25,
  wearGbpPerExportKwh:0.05,verified:true,
- exportAttributionVerified:true,solarInputVerified:true,directRateVerified:true
+ exportAttributionVerified:true,solarInputVerified:true,directRateVerified:true,
+ directExportOpportunityVerified:true,chargingOriginVerified:true
 };
 let res=ledger.trace([solarOne],{simulation:true,initial:{
  solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0
@@ -50,6 +51,8 @@ approx(res.totals.houseSolarOpportunityGbp,.066,'House solar opportunity deducte
 assert(!ledger.trace([solarOne],{}).available,'No actual sensor verification: no ROI');
 assert(!ledger.trace([{...solarOne,exportAttributionVerified:false}],{verified:true,initial:{
  solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0}}).available);
+assert(!ledger.trace([{...solarOne,directExportOpportunityVerified:false}],{verified:true,initial:{
+ solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0}}).available,'Do not invent 12p export availability when solar would have been curtailed');
 assert(ledger.trace([solarOne],{verified:true,initial:{solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0}}).available);
 assert(!ledger.trace([{...solarOne,exportToGridAcKwh:5.2}],{simulation:true,initial:{
  solarDcKwh:0,gridDcKwh:9.216,solarOpportunityGbp:0}}).available);
