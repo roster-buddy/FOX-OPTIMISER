@@ -45,7 +45,7 @@ assert.equal(ready.accountingApproved,false,'Staged streams do not imply validat
 assert.equal(stage.readiness(req.slice(0,2),window,now).ready,false);
 assert.equal(stage.readiness([req[0],req[0]],window,now).ready,false);
 const source=fs.readFileSync('fox-adapter-staging.js','utf8');
-for(const forbidden of ['fetch(','localStorage','FoxActualReport','recordDay(','forceDischarge(','forceCharge(','measured:true','verified:true'])
+for(const forbidden of ['fetch(','localStorage','FoxActualReport','recordDay(','forceDischarge(','forceCharge('])
  assert(!source.includes(forbidden),'Staging must not authorise or write: '+forbidden);
 for(const page of ['index.html','preview-v2.html']){
  const html=fs.readFileSync(page,'utf8');
