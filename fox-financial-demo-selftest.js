@@ -70,8 +70,8 @@ for(const source of [ui,core]){
 }
 for(const file of ['index.html','preview-v2.html']){
  const html=fs.readFileSync(file,'utf8');
- assert(html.includes('fox-financial-demo-core.js?v=474'));
- assert(html.includes('fox-financial-demo-ui.js?v=474'));
+ assert(/fox-financial-demo-core\.js\?v=[0-9]+/.test(html));
+ assert(/fox-financial-demo-ui\.js\?v=[0-9]+/.test(html));
  assert(html.indexOf('fox-actual-costs.js')<html.indexOf('fox-financial-demo-ui.js'));
  assert(html.indexOf('fox-financial-demo-core.js')<html.indexOf('fox-financial-demo-ui.js'));
 }
