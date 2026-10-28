@@ -29,7 +29,7 @@ function stage(batch,window,now){
  const sorted=[...batch.rows].sort((a,b)=>a?.start-b?.start);
  for(const [index,r] of sorted.entries()){
   if(!r||!finite(r.start)||!finite(r.end)||r.end<=r.start||
-    r.start!==cursor||r.end>window.end)
+    r.start!==cursor||r.end>window.end||r.end-r.start>1800000)
    return fail('Missing, overlapping or boundary-crossing intervals at row '+(index+1));
   if(r.unit!=='kWh'||!finite(r.value)||r.value<0||r.value>100)
    return fail('Invalid energy unit or value at row '+(index+1));
