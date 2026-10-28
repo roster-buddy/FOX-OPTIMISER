@@ -63,4 +63,19 @@ assert(!ledger.trace([day2],{simulation:true,initial:{
 assert(!ledger.trace([solarOne],{verified:true,initial:{
  solarDcKwh:.5,gridDcKwh:8.7,solarOpportunityGbp:.06}}).available,
  'Historic opening solar origin must be independently supported');
+
+// Separate conditional calculation: if ALL of 1.024 kWh originated from solar,
+// and exactly 80% is metered into the grid, the extra over immediate 12p
+// direct export is 12.12416 pence. This does NOT follow from SOC alone.
+const solarOnly={...solarOne,solarInputAcKwh:1.024,solarStoredDcKwh:1.024,
+ exportDischargedDcKwh:1.024,exportToGridAcKwh:.8192,
+ directExportRateGbpPerKwh:.12,achievedExportRateGbpPerKwh:.298,
+ wearGbpPerExportKwh:0};
+const example=ledger.trace([solarOnly],{simulation:true,
+ initial:{solarDcKwh:0,gridDcKwh:0,solarOpportunityGbp:0}});
+assert(example.available,example.reason);
+approx(example.totals.solarGridRevenueGbp,.8192*.298,'Example paid export');
+approx(example.totals.exportSolarOpportunityGbp,1.024*.12,'Example direct export alternative');
+approx(example.totals.solarExportGainGbp,.1212416,'Exact extra profit pounds before wear');
+
 console.log('SOLAR STORAGE ROI PASS: 90->100->50% attribution, 12p foregone export, both losses, carryover and missing-data gates');
