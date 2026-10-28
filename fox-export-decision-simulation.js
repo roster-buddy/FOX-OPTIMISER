@@ -9,7 +9,7 @@ function evaluate(s){
  if(!s||!finite(s.now)||s.now<0)return unavailable('Invalid simulation clock');
  const p=Object.fromEntries(clock.formatToParts(new Date(s.now)).map(x=>[x.type,x.value]));
  const minutes=Number(p.hour)*60+Number(p.minute);
- if(minutes<330||minutes>=1140)return unavailable('Outside 05:30–19:00 UK local time');
+ if(minutes<330||minutes>1110)return unavailable('Outside 05:30–19:00 UK local time');
  if(s.readOnlySimulation!==true)return unavailable('Simulation mode not confirmed');
  const fields=['socPct','capacityKwh','demandUntil19Kwh','exportPence','peakImportPence',
  'cheapImportPence','wearPence','efficiency','solarOpportunityPence','exportHeadroomKw',
