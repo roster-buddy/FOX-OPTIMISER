@@ -73,3 +73,34 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxActualCosts #foxActualReportDetails{margin-bottom:12px}
 #foxActualCosts #foxActualReportDetails table{margin-top:10px}
 @media(max-width:650px){#foxHouseBenefit .fox-discharge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Completely isolated, opt-in sample finances. Not styled as actual financial results. */
+#foxFinancialDemo{margin:20px 0 16px;padding:18px;border:1px dashed #bf9858;border-radius:14px;background:#282416;color:#f5eddc}
+#foxFinancialDemo .fox-demo-heading{display:flex;gap:16px;align-items:center;justify-content:space-between}
+#foxFinancialDemo .fox-demo-heading h3{margin:5px 0 3px!important;color:#f9e9c5}
+#foxFinancialDemo .fox-demo-heading .note{margin:3px 0!important;color:#e3d3af}
+#foxFinancialDemo .fox-demo-heading button{flex:none;border:1px solid #b18d5b;background:#49371f;color:#ffeccc}
+#foxFinancialDemo .fox-demo-label{display:inline-block;padding:4px 9px;border-radius:6px;border:1px solid #a98951;background:#3e311b;color:#fcd897;font-size:11px;letter-spacing:.05em;font-weight:750}
+#foxFinancialDemo .fox-demo-banner{margin:17px 0;padding:11px 13px;background:#5a3b18;border:1px solid #ba914d;border-radius:9px;color:#fff0cd;font-weight:750;font-size:12px;line-height:1.5}
+#foxFinancialDemo .fox-demo-controls{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-bottom:14px;color:#f0d8b1;font-size:13px}
+#foxFinancialDemo .fox-demo-ev{display:flex;gap:8px;align-items:center;cursor:pointer}
+#foxFinancialDemo .fox-demo-ev input{width:18px;height:18px;accent-color:#e8b55e}
+#foxFinancialDemo h4{margin:18px 0 10px!important;font-size:15px;color:#f6e8c8}
+#foxFinancialDemo .fox-demo-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+#foxFinancialDemo .fox-demo-stats>div{padding:12px;background:#342b20;border:1px solid #94764b;border-radius:11px;min-width:0}
+#foxFinancialDemo .fox-demo-stats small{color:#e5d6bd;line-height:1.35;display:block;min-height:34px}
+#foxFinancialDemo .fox-demo-stats strong{display:block;margin-top:9px;color:#fff1d4;font-size:20px;font-variant-numeric:tabular-nums}
+#foxFinancialDemo #foxDemoMonthExplanation{color:#e2d2b9;margin-top:12px}
+#foxFinancialDemo .fox-demo-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:10px 0 18px}
+#foxFinancialDemo .fox-demo-day-button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:53px;min-width:0;padding:8px 6px;background:#312c25;border:1px solid #715f44;color:#f2dec2;border-radius:8px}
+#foxFinancialDemo .fox-demo-day-button strong{font-size:14px}
+#foxFinancialDemo .fox-demo-day-button small{font-size:10px;white-space:nowrap}
+#foxFinancialDemo .fox-demo-day-button[aria-pressed=true]{background:#5f481f;border-color:#f3b95c;outline:1px solid #f3b95c}
+#foxFinancialDemo .fox-demo-day-button:focus-visible,#foxFinancialDemo button:focus-visible{outline:2px solid #f3c16d;outline-offset:2px}
+#foxFinancialDemo .fox-demo-day{border-top:1px solid #9a7644;padding-top:8px}
+#foxFinancialDemo .fox-demo-flow{margin:10px 0;padding:10px 12px;border-radius:8px;background:#322a20;color:#ecdabb;font-size:13px;line-height:1.6}
+#foxFinancialDemo .foxDisclosure{border-color:#8f724a;background:#30281f;margin:10px 0}
+#foxFinancialDemo .foxDisclosure summary{color:#ffdb97}
+#foxFinancialDemo .fox-demo-detail{font-size:13px;line-height:1.7;color:#ecdbbf;padding-bottom:15px}
+#foxFinancialDemo .fox-demo-caution{font-size:12px;line-height:1.65;color:#f2d5a9;margin:18px 0 0}
+@media(max-width:700px){#foxFinancialDemo{padding:12px}#foxFinancialDemo .fox-demo-heading{align-items:stretch;flex-direction:column}#foxFinancialDemo .fox-demo-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxFinancialDemo .fox-demo-stats strong{font-size:18px}#foxFinancialDemo .fox-demo-calendar{gap:3px}#foxFinancialDemo .fox-demo-day-button{padding:5px 2px;min-height:46px}#foxFinancialDemo .fox-demo-day-button small{font-size:9px}}
