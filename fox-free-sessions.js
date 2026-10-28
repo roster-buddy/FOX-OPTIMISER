@@ -231,6 +231,7 @@
     monthHead.hidden = next !== 'month';
     document.getElementById('foxMonthMode').setAttribute('aria-pressed', String(next === 'month'));
     document.getElementById('foxDayMode').setAttribute('aria-pressed', String(next === 'day'));
+    document.dispatchEvent(new CustomEvent('fox:calendar-mode-changed', {detail: {mode: next}}));
     if (next === 'day') drawHours();
     else decorateMonth();
   }
