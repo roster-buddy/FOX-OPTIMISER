@@ -58,3 +58,18 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 .fox-house-extras{grid-template-columns:repeat(2,minmax(0,1fr));}
 .fox-month-pnl .fox-month-benefits{margin-top:14px;border-top:1px solid #3c516f;padding-top:14px}
 @media(max-width:700px){.fox-benefit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fox-benefit-grid strong{font-size:19px}}
+
+/* Compact financial-first Daily costs layout: details are native iPad-friendly disclosures. */
+#foxActualCosts #foxHouseBenefit{margin:18px 0 0}
+#foxHouseBenefit .fox-benefit-grid>div:nth-child(3){background:#14392f;border-color:#39816b}
+#foxHouseBenefit .fox-benefit-grid>div:nth-child(4){border-color:#526d8d}
+#foxHouseBenefit .fox-benefit-grid strong{font-variant-numeric:tabular-nums}
+#foxHouseBenefit .fox-discharge-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#foxHouseBenefit .fox-discharge-grid>div{background:#192b42;border-color:#3d536f}
+#foxActualCosts .foxTechnicalDisclosure{margin:16px 0 0;background:#111e31}
+#foxActualCosts .foxTechnicalDisclosure>summary{font-size:15px;color:#d5e5fa;min-height:44px;display:list-item}
+#foxActualCosts .foxTechnicalDisclosure[open]>summary{border-bottom:1px solid #334765;margin-bottom:14px}
+#foxActualCosts .foxTechnicalDisclosure>p.note{line-height:1.6}
+#foxActualCosts #foxActualReportDetails{margin-bottom:12px}
+#foxActualCosts #foxActualReportDetails table{margin-top:10px}
+@media(max-width:650px){#foxHouseBenefit .fox-discharge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

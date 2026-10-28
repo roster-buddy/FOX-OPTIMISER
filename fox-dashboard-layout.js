@@ -36,7 +36,8 @@ function setup(){
    const details=document.createElement('details');details.className='foxDisclosure';
    const summary=document.createElement('summary');summary.textContent='Connections & tariff details · waiting for setup';details.append(summary);
    const nodes=[];let item=heading.nextElementSibling;
-   while(item&&item.tagName!=='DIV'){nodes.push(item);item=item.nextElementSibling;}
+   // Stop before the always-visible financial cards or technical disclosures.
+   while(item&&!['DIV','SECTION','DETAILS'].includes(item.tagName)){nodes.push(item);item=item.nextElementSibling;}
    heading.before(details);heading.remove();for(const node of nodes)details.append(node);
   }
  }
