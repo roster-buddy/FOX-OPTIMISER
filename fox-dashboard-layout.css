@@ -204,3 +204,15 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxFinancialDemo .fox-demo-detail-list dd{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 #foxFinancialDemo .fox-demo-method .fox-demo-caution{margin:10px 0 0;line-height:1.6}
 @media(max-width:650px){#foxFinancialDemo .fox-demo-primary-stats{grid-template-columns:1fr}#foxFinancialDemo .fox-demo-primary-stats strong{font-size:19px}#foxFinancialDemo .fox-demo-cash-line{align-items:flex-start;flex-wrap:wrap}}
+
+/* Read-only optional paired forecast accuracy inspection. */
+#foxSolarAccuracy{margin-top:16px;padding:12px;border:1px solid #527b8e;border-radius:9px;background:#1b313e}
+#foxSolarAccuracy summary{cursor:pointer;font-weight:700;line-height:1.5;color:#e0f3ff}
+#foxSolarAccuracy label{display:block;font-size:13px;margin:12px 0 6px}
+#foxSolarAccuracy textarea{box-sizing:border-box;width:100%;min-height:125px;padding:10px;border:1px solid #7c9db0;border-radius:8px;background:#0d1e29;color:#f0f8ff;font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+#foxSolarAccuracy .fox-solar-accuracy-actions{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}
+#foxSolarAccuracy .fox-solar-accuracy-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+#foxSolarAccuracy .fox-solar-accuracy-stats>div{min-width:0;padding:10px;background:#263f4c;border-radius:8px}
+#foxSolarAccuracy .fox-solar-accuracy-stats small{display:block;color:#c1d9e8;font-size:11px}
+#foxSolarAccuracy .fox-solar-accuracy-stats strong{display:block;font-size:16px;margin-top:5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+@media(max-width:500px){#foxSolarAccuracy .fox-solar-accuracy-stats{grid-template-columns:1fr}}
