@@ -25,13 +25,18 @@ const heading=node('h2');
 heading.after=function(element){ids[element.id]=element;};
 const actual=node('section');actual.id='foxActualCosts';actual.querySelector=s=>s==='h2'?heading:null;
 ids.foxActualCosts=actual;
-const document={readyState:'complete',createElement:node,getElementById:id=>ids[id]};
+let domReady;
+const document={readyState:'interactive',createElement:node,getElementById:id=>ids[id],
+ addEventListener(event,fn){assert.equal(event,'DOMContentLoaded');domReady=fn;}};
 let called=0;
 const context={window:{document,FoxFinancialDemoCore:core,
  FoxCalendarPnl:{recordDay(){called++;throw Error('Touched actuals');}},
  FoxActualReport:{build(){called++;throw Error('Touched recorded report');}}
 },Intl,Date,Number,String};
 vm.runInNewContext(fs.readFileSync('fox-financial-demo-ui.js','utf8'),context);
+assert(domReady,'Deferred module must wait for DOMContentLoaded while document is interactive');
+assert(!ids.foxFinancialDemo,'Must not attempt to mount before actual panel startup');
+domReady();
 assert(ids.foxFinancialDemo);
 assert.equal(ids.foxDemoContent.hidden,true,'Demo remains closed until explicit click');
 assert.equal(ids.foxDemoMonthDays.children.length,31,'Day picker offers all sample dates');
@@ -58,5 +63,6 @@ assert.equal(called,0,'No actual accounting APIs called');
 ids.foxDemoToggle.events.click();
 assert.equal(ids.foxDemoContent.hidden,true);
 vm.runInNewContext(fs.readFileSync('fox-financial-demo-ui.js','utf8'),context);
+domReady();
 assert.equal(Object.values(ids).filter(x=>x.id==='foxFinancialDemo').length,1,'Repeat loading does not duplicate demo panel');
 console.log('FINANCIAL DEMO UI PASS: opt-in, 31 selectable days, monthly/day values, EV exclusion, close and actuals isolation');
