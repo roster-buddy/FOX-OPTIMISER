@@ -30,6 +30,7 @@ function setup(){
  '</div>',
  '<div class="fox-payback-track" role="progressbar" aria-label="Verified battery investment recovery" aria-valuemin="0" aria-valuemax="4800" aria-valuenow="0" aria-valuetext="Awaiting verified readings"><div id="foxPaybackFill"></div></div>',
  '<p id="foxPaybackStatus" class="note" aria-live="polite">Awaiting validated battery costs and household readings. No forecast is possible yet.</p>',
+ '<p id="foxPaybackSeasonStatus" class="note">Seasonal learning: awaiting a full year of verified readings across all 12 months.</p>',
  '<p class="note">Solar stored and exported is compared against what the original solar energy could have earned via direct export (12p/kWh only where that historical baseline is confirmed). Charging/discharging losses and validated wear are reflected in the solar gain. Solar-retained allocation assumes household discharge uses grid-origin storage first and later export draws remaining solar-origin storage first; this is an economic scenario, not direct electron measurement. Financing, maintenance and battery replacement costs are not included. Historical readings must be imported for full-lifetime recovery.</p>'
  ].join('');
  // Financial recovery is the headline: place it before the separate DEMO,
@@ -50,6 +51,7 @@ function setup(){
    get('foxPaybackSaved').textContent='Awaiting readings';
    get('foxPaybackRemaining').textContent=money(core.DEFAULT_TARGET_GBP);
    get('foxPaybackDate').textContent='Learning…';
+   get('foxPaybackSeasonStatus').textContent='Seasonal learning: awaiting a full year of verified readings across all 12 months.';
    get('foxPaybackStatus').textContent=state.reason+
     '. The prediction becomes available after at least 60 verified days with sufficient coverage.';
    get('foxPaybackFill').style.width='0%';
@@ -71,10 +73,17 @@ function setup(){
   get('foxPaybackFill').style.width=state.progressPct.toFixed(1)+'%';
   progress.setAttribute('aria-valuenow',String(Math.max(0,Math.min(core.DEFAULT_TARGET_GBP,state.totalBenefitGbp))));
   progress.setAttribute('aria-valuetext',state.progressPct.toFixed(1)+'% of £4,800 recovered');
-  if(state.forecast?.available&&state.forecast.date){
+  const forecast=state.forecast;
+  get('foxPaybackSeasonStatus').textContent=forecast?.seasonalEligible?
+   'Seasonal model ready: verified monthly history for all 12 calendar months.':
+   'Seasonal learning: '+(forecast?.monthsCovered??0)+
+   '/12 calendar months sampled (minimum 14 verified days each); 300 verified days and a 365-day history span also required. Until then, any available date uses a recent trend.';
+  if(forecast?.available&&forecast.date){
    get('foxPaybackDate').textContent=state.forecast.date;
-   get('foxPaybackStatus').textContent='Indicative '+state.forecast.kind+' projection ('+
-    state.forecast.coveredDays+' verified days). '+state.forecast.method+'. '+state.forecast.notes;
+   get('foxPaybackStatus').textContent='Indicative '+forecast.kind+' projection ('+
+    forecast.coveredDays+' verified days). '+forecast.method+'. '+
+    (forecast.earliest&&forecast.latest?'Faster/slower sensitivity dates: '+forecast.earliest+' to '+forecast.latest+'. ':'')+
+    forecast.notes;
   }else {
    get('foxPaybackDate').textContent='Learning…';
    get('foxPaybackStatus').textContent=state.completeDays+' verified solar-source and household days ('+
