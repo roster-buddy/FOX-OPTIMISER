@@ -11,7 +11,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="fox-dashboard-layout.css?v=475"></head><body>
+<link rel="stylesheet" href="fox-dashboard-layout.css?v=476"></head><body>
 <div class="shell"><header><div class="brand"><div class="brandicon">⚡</div><div><h1>Fox Optimiser</h1><p>EVO10 · Agile planning</p></div></div><span class="pill safe">READ-ONLY</span></header>
 <main><section class="hero"><div class="eyebrow">YOUR BATTERY PLAN</div><h2>Make every kWh count.</h2><p>Plan exports around Agile prices while protecting energy for your home. No commands are sent to your inverter.</p><div class="status" id="priceStatus" aria-live="polite">Checking Octopus prices…</div></section>
 <section class="metrics"><article class="metric"><small>Battery SOC · manual estimate</small><strong id="socDisplay">—</strong><span id="batteryKwh">Manual estimate</span></article><article class="metric"><small>Protected reserve</small><strong id="reserveDisplay">2.0 kWh</strong><span>Household forecast included in plan</span></article><article class="metric"><small>Planned battery export</small><strong id="exportDisplay">—</strong><span id="revenueDisplay">Estimated revenue</span></article><article class="metric"><small>Next action</small><strong class="action-text" id="nextAction">—</strong><span id="nextActionTime">Based on available prices</span></article></section>
@@ -74,6 +74,8 @@
 <script src="fox-recorded-data.js?v=468" defer></script>
 <script src="fox-actual-costs.js?v=476" defer></script>
 <script src="fox-household-benefit.js?v=475" defer></script>
+<script src="fox-solar-storage-ledger.js?v=476" defer></script>
+<script src="fox-solar-meter-reconcile.js?v=476" defer></script>
 <script src="fox-discharge-flow.js?v=472" defer></script>
 <script src="fox-solar-storage-ledger.js?v=476" defer></script>
 <script src="fox-actual-report.js?v=476" defer></script>
