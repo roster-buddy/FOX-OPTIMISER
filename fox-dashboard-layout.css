@@ -150,3 +150,20 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxSeasonalDemo th:first-child,#foxSeasonalDemo td:first-child{text-align:left}
 #foxSeasonalDemo .note{font-size:12px;line-height:1.6;color:#f1d6ae}
 @media(max-width:600px){#foxSeasonalDemo{padding:11px}#foxSeasonalDemo .fox-seasonal-summary{grid-template-columns:1fr}#foxSeasonalDemo .fox-seasonal-summary strong{font-size:17px}}
+
+/* Compact side-by-side synthetic solar cases and monthly comparison. */
+#foxSeasonalDemo h5{font-size:14px;margin:20px 0 10px;color:#ffe4b2}
+#foxSeasonalDemo .fox-seasonal-compare{min-width:420px}
+#foxSeasonalDemo .fox-seasonal-selected{background:#5d4426;color:#fff0d2;font-weight:750}
+#foxSeasonalDemo .fox-seasonal-bars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#foxSeasonalDemo .fox-seasonal-bar-month{padding:9px 10px;border:1px solid #735536;border-radius:8px;min-width:0;background:#352a1e}
+#foxSeasonalDemo .fox-seasonal-bar-month>strong{display:block;margin-bottom:6px;font-size:12px;color:#ffdfaa}
+#foxSeasonalDemo .fox-seasonal-bar-line{display:grid;grid-template-columns:45px minmax(0,1fr) 65px;gap:6px;align-items:center;padding:3px 0;font-size:11px}
+#foxSeasonalDemo .fox-seasonal-bar-line>span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+#foxSeasonalDemo .fox-seasonal-bar-selected{font-weight:800;color:#fff0cb}
+#foxSeasonalDemo .fox-seasonal-bar-track{height:9px;background:#1e1b1a;border-radius:5px;overflow:hidden}
+#foxSeasonalDemo .fox-seasonal-bar-fill{height:100%;border-radius:5px}
+#foxSeasonalDemo .fox-seasonal-low{background:#8eabc6}
+#foxSeasonalDemo .fox-seasonal-typical{background:#d2a85b}
+#foxSeasonalDemo .fox-seasonal-high{background:#83c6a3}
+@media(max-width:600px){#foxSeasonalDemo .fox-seasonal-bars{grid-template-columns:1fr}}
