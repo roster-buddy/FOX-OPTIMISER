@@ -67,7 +67,7 @@ function reconcile(streams,keys,window,now,exact){
  return {available:true,reason:null};
 }
 function csv(report){
- const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings'];
+ const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings','solarStorage'];
  if(!report?.window||(!keys.some(key=>Number.isFinite(report[key]?.total))&&report.dischargeFlow?.available!==true))return null;
  const cell=value=>{
   let text=String(value??'');
