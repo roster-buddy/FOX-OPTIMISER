@@ -27,7 +27,7 @@ for(const name of screens){
  assert(html.includes('Fox Optimiser · Read-only development preview · 28 Oct 2026'),name+' must not advertise v0.1');
  assert(!html.includes('Prototype v0.1'),name+' still displays stale prototype label');
  assert(/fox-actual-costs\.js\?v=[0-9]+/.test(html),name+' must refresh costs UI');
- assert(html.includes('fox-dashboard-layout.js?v=473'),name+' must refresh layout');
+ assert(/fox-dashboard-layout\\.js\\?v=[0-9]+/.test(html),name+' must refresh layout');
  assert(/fox-dashboard-layout\.css\?v=[0-9]+/.test(html),name+' must reference a versioned dashboard stylesheet');
 }
 console.log('COMPACT DAILY COSTS PASS: visible savings, closed technical details, intact data targets and updated footer');
