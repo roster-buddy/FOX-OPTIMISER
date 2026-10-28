@@ -47,13 +47,14 @@ function project(rows,remaining,asOf){
  const trend=recent.reduce((total,row)=>total+row.batterySavingGbp+(row.solarStorageGainGbp??0)+
   (row.incrementalForceProfitGbp??0)+(row.directSolarUpliftGbp??0),0)/recent.length;
  if(trend<=0)return {available:false,reason:'Recent net savings are not positive, so no reliable break-even date'};
- const seasonal=rows.length>=300&&months.size>=10;
- // Seasonal sample uses observed calendar months. Forecast only if at least
- // 14 independently verified days in a calendar month; otherwise use trend.
+ // A genuine seasonal projection needs all 12 calendar months represented.
+ // Ten months must not silently extrapolate the missing winter/summer months.
  const byMonth=Array.from({length:12},()=>[]);
  for(const row of rows)byMonth[Number(row.date.slice(5,7))-1].push(row.batterySavingGbp+(row.solarStorageGainGbp??0)+(row.incrementalForceProfitGbp??0)+(row.directSolarUpliftGbp??0));
  const rates=byMonth.map(group=>group.length>=14?
   group.reduce((a,b)=>a+b,0)/group.length:null);
+ const seasonal=rows.length>=300&&elapsed>=365&&rates.every(rate=>rate!==null);
+ const monthsCovered=rates.filter(rate=>rate!==null).length;
  function forecast(multiplier=1){
   let sum=0,day=asOf;
   for(let i=1;i<=365*60;i++){
@@ -68,7 +69,10 @@ function project(rows,remaining,asOf){
   method:'History-weighted scenario estimate, not a trained AI model',
   date:forecast(),earliest:forecast(1.25),latest:forecast(.75),
   recentDailyBenefitGbp:trend,coveredDays:rows.length,coverage,
-  notes:'Indicative only: tariff, weather, seasonal patterns, battery age and export prices may change.'};
+  monthsCovered,seasonalEligible:seasonal,seasonalDailyRatesGbp:seasonal?rates:null,
+  notes:(seasonal?'All 12 calendar months have verified samples; monthly averages repeat as a scenario. ':
+   'Fewer than 12 sufficiently sampled calendar months: flat recent daily trend, not a seasonal model. ')+
+   'The 25% faster/slower dates are sensitivity scenarios, not statistical confidence intervals. Tariffs, weather, battery ageing and export prices may change.'};
 }
 function analyse(entries,target=DEFAULT_TARGET_GBP,asOf=new Date().toISOString().slice(0,10)){
  if(!Number.isFinite(target)||target<=0||!validateDate(asOf))return unavailable('Invalid battery investment or date',target);
