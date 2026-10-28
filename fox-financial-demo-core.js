@@ -128,13 +128,15 @@ function makeMonth(options={}){
   const attribution=solarLedger.days[i];
   const d=days[i];
   d.solarStorage=attribution;
+  d.directSolarUpliftGbp=round(d.solarExportKwh*Math.max(0,d.exportRateGbp-.12));
   d.batteryPaybackSavingGbp=round(d.batteryOnlySavingGbp-attribution.houseSolarOpportunityGbp);
-  d.batteryPaybackGainGbp=round(d.batteryPaybackSavingGbp+attribution.solarExportGainGbp);
+  d.batteryPaybackGainGbp=round(d.batteryPaybackSavingGbp+attribution.solarExportGainGbp+d.directSolarUpliftGbp);
  }
  const totals=Object.fromEntries(KEYS.map(key=>[key,round(
   days.reduce((n,d)=>n+d[key],0))]));
  totals.batteryPaybackSavingGbp=round(days.reduce((n,d)=>n+d.batteryPaybackSavingGbp,0));
  totals.solarStorageExportGainGbp=round(solarLedger.totals.solarExportGainGbp);
+ totals.directSolarUpliftGbp=round(days.reduce((n,d)=>n+d.directSolarUpliftGbp,0));
  totals.solarStorageHouseOpportunityGbp=round(solarLedger.totals.houseSolarOpportunityGbp);
  totals.batteryPaybackGainGbp=round(days.reduce((n,d)=>n+d.batteryPaybackGainGbp,0));
  return {type:'SIMULATION_ONLY',month:MONTH,params:PARAMS,includeEV,
