@@ -36,7 +36,7 @@ function build(endDay,input,now){
  const inventory=input?.solarOpeningLots;
  const ledger=measuredSolar.available&&inventory?.sourceHistoryVerified===true?
   solarLedger.trace([...prior,...measuredSolar.rows],
-   {verified:true,initial:inventory}):
+   {verified:true,initial:inventory,allocationMethod:solarLedger.RETAIN_SOLAR}):
   {available:false,reason:!measuredSolar.available?measuredSolar.reason:
    'Verified opening solar/grid battery energy and direct-export opportunity inventory required'};
  const attributed=ledger.available?ledger.days.find(x=>x.day===endDay):null;
