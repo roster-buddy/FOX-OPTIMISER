@@ -4,6 +4,7 @@
 const node=typeof module!=='undefined'&&module.exports;
 const dates=node?require('./fox-actual-costs.js'):root.FoxActualCosts;
 const recorded=node?require('./fox-recorded-data.js'):root.FoxRecordedData;
+const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefit;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
@@ -22,11 +23,12 @@ function build(endDay,input,now){
  const cashBalance=importCheck.available&&[gridExport,batteryCharge,evCharge].every(x=>x.available)?
   {available:true,value:gridExport.cost-batteryCharge.cost-evCharge.cost,reason:null}:
   unavailable(importCheck.reason||'Complete export earnings, battery charging and EV charging costs required');
+ const household=benefit.build(window,input,now);
  const gridBalance=gridImport.available&&gridExport.available?
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
  return {importCheck,exportCheck,window,gridImport,gridExport,batteryCharge,evCharge,houseGrid,solarExport,batteryExport,cashBalance,gridBalance,
-  savings:unavailable('Recorded source flows and carried battery energy costs required'),
+  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,
   standingCharge:unavailable('Historical standing charge not connected')};
 }
 // Compare matching measured intervals; never spread energy uniformly to force a match.
@@ -47,7 +49,7 @@ function reconcile(streams,keys,window,now,exact){
  return {available:true,reason:null};
 }
 function csv(report){
- const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings'];
+ const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings'];
  if(!report?.window||!keys.some(key=>Number.isFinite(report[key]?.total)))return null;
  const cell=value=>{
   let text=String(value??'');
