@@ -3,15 +3,20 @@
    The unit of charging is AC solar diverted (before charge loss); export is AC
    actually delivered to the grid (after all losses and house demand).
    A pool with separate solar/grid inventories carries solar opportunity cost
-   across day boundaries. PRO-RATA origin attribution is a MODEL, not a sensor.
+   across day boundaries. Origin attribution (including solar-retained mode)
+   is an ACCOUNTING ASSUMPTION, not direct measurement of electrons.
 */
 (function(root){
 'use strict';
 const node=typeof module!=='undefined'&&module.exports;
 const finite=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0;
 const fail=reason=>({available:false,reason,days:[],totals:null});
-const n0=Object.freeze({solarDcKwh:0,gridDcKwh:0,solarOpportunityGbp:0});
+const RETAIN_SOLAR='grid-first-house-solar-first-export';
+const PRO_RATA='pro-rata';
 function trace(rows,opts={}){
+ const allocationMethod=opts.allocationMethod||PRO_RATA;
+ if(![RETAIN_SOLAR,PRO_RATA].includes(allocationMethod))
+  return fail('Unknown solar/grid source-allocation assumption');
  if(!Array.isArray(rows)||!rows.length)return fail('No verified solar and battery source-flow history');
  const verified=opts.verified===true;
  if(!verified&&opts.simulation!==true)return fail('Source splits and historic direct-export rates must be verified');
@@ -62,9 +67,18 @@ function trace(rows,opts={}){
   const pool=solarDc+gridDc;
   const output=row.houseDischargedDcKwh+row.exportDischargedDcKwh;
   if(output>pool+1e-6)return fail('Battery discharge exceeds stored source inventory on '+row.day);
+  // House-first attribution: the house uses the grid-origin inventory
+  // before drawing down stored solar. A later forced export uses any
+  // remaining solar-origin inventory first. This is the user's selected
+  // economic bookkeeping scenario, NOT proof of physical electron origin.
+  // The default pro-rata option remains available as a comparator.
   const solarShare=pool>1e-9?solarDc/pool:0;
-  const solarHouseDc=row.houseDischargedDcKwh*solarShare;
-  const solarExportDc=row.exportDischargedDcKwh*solarShare;
+  const solarHouseDc=allocationMethod===RETAIN_SOLAR?
+   Math.max(0,row.houseDischargedDcKwh-gridDc):
+   row.houseDischargedDcKwh*solarShare;
+  const solarExportDc=allocationMethod===RETAIN_SOLAR?
+   Math.min(row.exportDischargedDcKwh,Math.max(0,solarDc-solarHouseDc)):
+   row.exportDischargedDcKwh*solarShare;
   const houseSolarOpportunityGbp=solarDc>1e-9?solarOpp*(solarHouseDc/solarDc):0;
   const exportSolarOpportunityGbp=solarDc>1e-9?solarOpp*(solarExportDc/solarDc):0;
   const solarGridExportAcKwh=row.exportDischargedDcKwh>1e-9?
@@ -92,7 +106,8 @@ function trace(rows,opts={}){
    // Solar baseline includes all solar input later allocated to this export,
    // including the input lost in charging and discharging.
    solarExportDischargeLossKwh:solarExportDc-solarGridExportAcKwh,
-   openingSolarDcKwh:previousSolar
+   openingSolarDcKwh:previousSolar,
+   allocationMethod
   };
   records.push(data);
  }
@@ -105,7 +120,7 @@ function trace(rows,opts={}){
   let latest=days.at(-1);
   if(!latest||latest.day!==record.day){
    latest={day:record.day,intervalCount:0,openingSolarDcKwh:record.openingSolarDcKwh,
-    provenance:record.provenance};
+    provenance:record.provenance,allocationMethod:record.allocationMethod};
    for(const key of sumKeys)latest[key]=0;
    days.push(latest);
   }
@@ -116,7 +131,7 @@ function trace(rows,opts={}){
   latest.closingSolarOpportunityGbp=record.closingSolarOpportunityGbp;
  }
  const sum=key=>days.reduce((n,d)=>n+d[key],0);
- return {available:true,reason:null,days,records,
+ return {available:true,reason:null,days,records,allocationMethod,
   totals:{solarChargeInputAcKwh:sum('solarChargeInputAcKwh'),
    solarGridExportAcKwh:sum('solarGridExportAcKwh'),
    solarGridRevenueGbp:sum('solarGridRevenueGbp'),
@@ -126,8 +141,10 @@ function trace(rows,opts={}){
    solarExportGainBeforeWearGbp:sum('solarExportGainBeforeWearGbp'),
    solarExportGainGbp:sum('solarExportGainGbp')},
   closing:{solarDcKwh:solarDc,gridDcKwh:gridDc,solarOpportunityGbp:solarOpp},
-  method:'Pro-rata model of measured solar/grid battery inventory. Cannot directly sense electron origin.'};
+  method:allocationMethod===RETAIN_SOLAR?
+   'Solar-retained accounting scenario: assign house use to grid-origin inventory first, then assign later exports to remaining solar inventory first; not directly measured origin.':
+   'Pro-rata solar/grid battery inventory allocation: not directly measured origin.'};
 }
-const api={trace};
+const api={trace,RETAIN_SOLAR,PRO_RATA};
 if(node)module.exports=api;else root.FoxSolarStorageLedger=api;
 })(typeof window!=='undefined'?window:globalThis);

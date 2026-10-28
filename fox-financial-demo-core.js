@@ -121,7 +121,8 @@ function makeMonth(options={}){
   achievedExportRateGbpPerKwh:d.exportRateGbp,
   wearGbpPerExportKwh:PARAMS.wearGbpPerExportKwh
  }));
- const solarLedger=storage.trace(rows,{simulation:true,initial:{solarDcKwh:0,gridDcKwh:PARAMS.openingStoredKwh,solarOpportunityGbp:0}});
+ const solarLedger=storage.trace(rows,{simulation:true,allocationMethod:storage.RETAIN_SOLAR,
+  initial:{solarDcKwh:0,gridDcKwh:PARAMS.openingStoredKwh,solarOpportunityGbp:0}});
  if(!solarLedger.available)throw Error('SIMULATED solar origin ledger cannot reconcile: '+solarLedger.reason);
  for(let i=0;i<days.length;i++){
   const attribution=solarLedger.days[i];

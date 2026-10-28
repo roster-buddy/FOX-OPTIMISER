@@ -48,7 +48,7 @@ function setup(){
  '  <details class="foxDisclosure"><summary>Example discharge costs, export and cash balance</summary>',
  '   <div id="foxDemoDetail" class="fox-demo-detail"></div></details>',
  ' </div>',
- ' <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Household bill savings do not subtract foregone solar export value. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
+ ' <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Battery investment recovery DOES subtract foregone solar export from battery-to-house use; raw meter bill comparisons do not. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
  '</div>'
  ].join('');
  const heading=actual.querySelector('h2');if(!heading)return;heading.after(el);
@@ -102,7 +102,7 @@ function setup(){
     '. Total meter import cost, including EV '+money(d.totalGridImportCostGbp)+
     ', makes grid cash balance '+money(d.netGridCashGbp)+
     '. EV alone costs '+money(d.evImportCostGbp)+
-    '. A weighted stored-energy cost pool carries forward across days. Solar stored energy has zero purchase cost, but foregone solar export is not deducted.');
+    '. A weighted stored-energy purchase-cost pool carries forward across days. The £4,800 recovery demonstration additionally deducts foregone direct solar export value. Solar is retained for export under an illustrative source-allocation assumption, not physically identifiable electrons.');
  }
  function render(){
   const t=sample.totals;

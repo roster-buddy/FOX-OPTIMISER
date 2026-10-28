@@ -118,7 +118,7 @@ function setup(){
    fill('#foxForcedEarned',money(force));
    fill('#foxSolarGain',money(solar));
    fill('#foxSolarStatus',solar?.available?
-    'Verified source attribution with proportional battery origin: solar-origin grid export '+
+    'Solar-retained accounting (house grid-origin first; export solar-origin first; model assumption, not physically measured electrons): solar-origin grid export '+
     solar.solarGridExportAcKwh.toFixed(2)+' kWh earned '+money({available:true,value:solar.solarGridRevenueGbp})+
     '. Total battery DC-to-AC difference this day '+solar.dcToAc.batteryDischargingKwh.toFixed(2)+
     ' kWh (house use accounted for separately); actual metered export '+solar.dcToAc.meteredGridExportKwh.toFixed(2)+' kWh'+
