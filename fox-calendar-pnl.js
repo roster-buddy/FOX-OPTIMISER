@@ -18,7 +18,25 @@ function monthSummary(reports,year,month){
  }
  return {net:count?net:null,imports:count?imports:null,exports:count?exports:null,count,days,complete:count===days};
 }
-const api={dayResult,monthSummary};
+function monthBenefits(reports,year,month){
+ const days=new Date(Date.UTC(year,month+1,0)).getUTCDate();
+ const result={savings:null,savingsDays:0,forced:null,forcedDays:0,days};
+ let saved=0,forced=0;
+ for(let day=1;day<=days;day++){
+  const key=year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  const r=reports.get(key);
+  if(r?.savings?.available&&Number.isFinite(r.savings.value)){
+   saved+=r.savings.value;result.savingsDays++;
+  }
+  if(r?.forceExport?.available&&Number.isFinite(r.forceExport.value)){
+   forced+=r.forceExport.value;result.forcedDays++;
+  }
+ }
+ if(result.savingsDays)result.savings=saved;
+ if(result.forcedDays)result.forced=forced;
+ return result;
+}
+const api={dayResult,monthSummary,monthBenefits};
 if(node){module.exports=api;return;}
 const reports=new Map();
 const cash=n=>(n<0?'−£':'£')+Math.abs(n).toFixed(2);
@@ -27,11 +45,17 @@ function render(){
  const grid=document.getElementById('v4CalendarGrid'),summary=document.getElementById('foxCalendarMonthPnl');
  if(!grid||!summary||typeof v4CalendarMonth==='undefined')return;
  const year=v4CalendarMonth.getFullYear(),month=v4CalendarMonth.getMonth();
- const s=monthSummary(reports,year,month);
+ const s=monthSummary(reports,year,month),benefit=monthBenefits(reports,year,month);
  summary.className='fox-month-pnl '+state(s.net);
  summary.replaceChildren();
  const title=document.createElement('strong');title.textContent=s.net===null?'Monthly P&L · awaiting readings':(s.complete?'Monthly P&L · ':'Recorded-day subtotal · ')+cash(s.net);summary.append(title);
  const detail=document.createElement('p');detail.textContent=s.count===0?'No complete recorded days yet.':s.count+' of '+s.days+' days recorded · Export '+cash(s.exports)+' − import '+cash(s.imports)+(s.complete?'':'. Incomplete month; missing days are excluded.');summary.append(detail);
+ const extra=document.createElement('p');extra.className='fox-month-benefits';
+ extra.textContent='Household bill savings: '+(benefit.savings===null?'—':cash(benefit.savings))+
+  ' ('+benefit.savingsDays+'/'+benefit.days+' days) · Force-discharge export earned: '+
+  (benefit.forced===null?'—':cash(benefit.forced))+' ('+benefit.forcedDays+'/'+benefit.days+
+  ' days). Gross force export is already within export P&L; never add it twice.';
+ summary.append(extra);
  const offset=(new Date(year,month,1).getDay()+6)%7;
  for(let day=1;day<=s.days;day++){
   const cell=grid.children[7+offset+day-1];if(!cell)continue;

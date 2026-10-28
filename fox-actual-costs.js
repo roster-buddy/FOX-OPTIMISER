@@ -49,7 +49,20 @@ function setup(){
   <p>Waiting for your hardware and API setup. Live collection is disabled. No API keys are requested or stored here.</p>
   <p>Confirmed import rates including VAT: daytime 23.2995p/kWh; regular overnight 3.4965p/kWh (23:30–05:30). Historical costs require the tariff applicable to each recorded interval, including confirmed Smart charging rates. Your current export rate has not been configured; Agile prices elsewhere are a planning scenario.</p>
   <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th><th>Data status</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
-  <p id="foxActualReconciliation" aria-live="polite"></p><h3>House and EV savings</h3><p>Battery / solar supplied to the house: Data unavailable.<br>Battery / solar supplied to the EV: Data unavailable.<br>Equivalent grid cost: Data unavailable.<br>Allocated actual supply cost: Data unavailable.<br>Savings: Data unavailable.</p>
+  <p id="foxActualReconciliation" aria-live="polite"></p>
+  <section id="foxHouseBenefit" class="fox-house-benefit" aria-live="polite">
+   <h3>Household savings · excluding EV</h3>
+   <p class="note">Compare actual house-only use against buying the same electricity at the applicable grid rate. Battery supply costs include traced charging costs and energy losses.</p>
+   <div class="fox-benefit-grid">
+    <div><small>House from grid · comparison</small><strong id="foxHouseBaseline">—</strong></div>
+    <div><small>Actual house supply cost</small><strong id="foxHouseActual">—</strong></div>
+    <div><small>Household bill saving</small><strong id="foxHouseSaving">—</strong></div>
+    <div><small>Forced battery export earned</small><strong id="foxForcedEarned">—</strong></div>
+   </div>
+   <p id="foxHouseStatus" class="note">Household saving: awaiting verified house-only readings.</p>
+   <p id="foxForcedStatus" class="note">Force-discharge earnings: awaiting verified battery-to-grid attribution.</p>
+   <p class="note">Force-discharge earnings are already included in total grid export P&L, not additional income to add again. Additional *net* force-discharge profit and savings after foregone solar export are unavailable until traceable energy costs and alternatives are known.</p>
+  </section>
   <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
   <p>Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>`;
   host.prepend(panel);
@@ -80,6 +93,20 @@ function setup(){
    const report=root.FoxActualReport?.build(input.value,{},Date.now());
    currentReport=report;
    if(download)download.disabled=!root.FoxActualReport?.csv(report);
+   const money=x=>x?.available&&Number.isFinite(x.value)?((x.value<0?'−£':'£')+Math.abs(x.value).toFixed(2)):'—';
+   const household=report?.savings,force=report?.forceExport;
+   const fill=(selector,value)=>{const el=panel.querySelector(selector);if(el)el.textContent=value;};
+   fill('#foxHouseBaseline',household?.available?'£'+household.baselineCost.toFixed(2):'—');
+   fill('#foxHouseActual',household?.available?'£'+household.actualCost.toFixed(2):'—');
+   fill('#foxHouseSaving',money(household));
+   fill('#foxForcedEarned',money(force));
+   fill('#foxHouseStatus',household?.available?
+    'House '+household.houseKwh.toFixed(2)+' kWh · grid '+household.gridKwh.toFixed(2)+' kWh · direct solar '+
+    household.solarKwh.toFixed(2)+' kWh · battery '+household.batteryKwh.toFixed(2)+' kWh. Solar opportunity cost tracked separately.':
+    'Household savings unavailable: '+(household?.reason||'Waiting for readings'));
+   fill('#foxForcedStatus',force?.available?
+    'Force-export '+force.total.toFixed(2)+' kWh · gross receipts included within total metered export (not extra net profit).':
+    'Force-discharge earnings unavailable: '+(force?.reason||'Waiting for readings'));
    const status=panel.querySelector('#foxActualReconciliation');
    if(status)status.textContent='Import check: '+(report?.importCheck?.available?'Reconciled':report?.importCheck?.reason||'Waiting for readings')+'. Export split check: '+(report?.exportCheck?.available?'Reconciled':report?.exportCheck?.reason||'Waiting for readings')+'.';
    const metrics=[

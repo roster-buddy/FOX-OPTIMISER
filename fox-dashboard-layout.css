@@ -47,3 +47,14 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 .fox-daily-sessions{font-size:13px;line-height:1.6;color:#a2e7cf}
 .fox-daily-breakdown button{margin-top:12px}
 @media(max-width:520px){.fox-daily-breakdown{padding:13px}.fox-daily-figures{gap:6px}.fox-daily-figure{padding:10px 7px}.fox-daily-figure strong{font-size:17px}.fox-daily-figure span{font-size:11px}}
+
+/* Actual measured household savings, with EV excluded; never invent missing values. */
+.fox-house-benefit{margin:22px 0;padding:18px;border:1px solid #354d69;border-radius:14px;background:#0f2034}
+.fox-house-benefit h3{margin:0 0 7px!important}
+.fox-benefit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:18px 0}
+.fox-benefit-grid>div{background:#192b42;border:1px solid #3d536f;border-radius:10px;padding:13px;min-width:0}
+.fox-benefit-grid small{display:block;color:#b3c7e0;line-height:1.4}
+.fox-benefit-grid strong{display:block;font-size:22px;letter-spacing:-.02em;margin-top:10px;font-variant-numeric:tabular-nums}
+.fox-house-extras{grid-template-columns:repeat(2,minmax(0,1fr));}
+.fox-month-pnl .fox-month-benefits{margin-top:14px;border-top:1px solid #3c516f;padding-top:14px}
+@media(max-width:700px){.fox-benefit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fox-benefit-grid strong{font-size:19px}}

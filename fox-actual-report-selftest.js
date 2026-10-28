@@ -54,4 +54,4 @@ const dangerous=report.build(day,input,w.end);dangerous.savings.reason='=SUM(1,2
 assert(report.csv(dangerous).includes("\"'=SUM(1,2)\""));
 console.log('ACTUAL CSV PASS: exact period, blank missing values and formula text protection');
 
-assert.equal(exported.split('\r\n').length,13);
+assert.equal(exported.split('\r\n').length,16);
