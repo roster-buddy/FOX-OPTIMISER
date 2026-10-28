@@ -186,3 +186,21 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxRoofWeather #foxRoofResult{padding:10px;background:#203946;border-radius:8px}
 @media(max-width:620px){#foxRoofWeather .fox-roof-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:380px){#foxRoofWeather .fox-roof-inputs{grid-template-columns:1fr}}
+
+/* Cleaner sample daily finance hierarchy; all existing figures remain available. */
+#foxFinancialDemo .fox-demo-key-label{font-size:12px;font-weight:700;letter-spacing:.01em;margin:14px 0 8px;color:#e8cda4}
+#foxFinancialDemo .fox-demo-primary-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
+#foxFinancialDemo .fox-demo-primary-stats>div{min-width:0}
+#foxFinancialDemo .fox-demo-main-saving{border-color:#cfac6b;background:#483620}
+#foxFinancialDemo .fox-demo-primary-stats strong{font-size:20px}
+#foxFinancialDemo .fox-demo-cash-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid #7a6548;border-radius:9px;background:#30291f;color:#ead7b8}
+#foxFinancialDemo .fox-demo-cash-line strong{font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#foxFinancialDemo .fox-demo-explanation{margin:10px 0;padding:10px 12px;border:1px solid #66573f;border-radius:9px}
+#foxFinancialDemo .fox-demo-explanation summary{cursor:pointer;font-weight:650;color:#f4d7a0;line-height:1.5}
+#foxFinancialDemo .fox-demo-secondary-stats{margin:12px 0}
+#foxFinancialDemo .fox-demo-detail h5{font-size:13px;margin:15px 0 8px;color:#f0d4a5}
+#foxFinancialDemo .fox-demo-detail-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 12px;margin:0;font-size:12px;line-height:1.5}
+#foxFinancialDemo .fox-demo-detail-list dt,#foxFinancialDemo .fox-demo-detail-list dd{margin:0;padding:8px 0;border-bottom:1px solid #564834;overflow-wrap:anywhere}
+#foxFinancialDemo .fox-demo-detail-list dd{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#foxFinancialDemo .fox-demo-method .fox-demo-caution{margin:10px 0 0;line-height:1.6}
+@media(max-width:650px){#foxFinancialDemo .fox-demo-primary-stats{grid-template-columns:1fr}#foxFinancialDemo .fox-demo-primary-stats strong{font-size:19px}#foxFinancialDemo .fox-demo-cash-line{align-items:flex-start;flex-wrap:wrap}}
