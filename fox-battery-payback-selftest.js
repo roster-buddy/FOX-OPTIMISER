@@ -40,15 +40,16 @@ assert.equal(achieved.progressPct,100);
 const duplicates=[verified[0],verified[0],verified[1]];
 assert.equal(payback.analyse(duplicates,4800,'2026-10-15').completeDays,2);
 const validExtract=payback.extract([
- {day:'2026-10-01',savings:{available:true,batteryOnlySavingGbp:1.1,value:3.5},solarStorage:{available:true,houseSolarOpportunityGbp:.1,solarExportGainGbp:.12},forceNet:{available:false,value:null}},
+ {day:'2026-10-01',savings:{available:true,batteryOnlySavingGbp:1.1,value:3.5},solarStorage:{available:true,houseSolarOpportunityGbp:.1,solarExportGainGbp:.12},directSolarUplift:{available:true,value:.05},forceNet:{available:false,value:null}},
  {day:'2026-10-02',savings:{available:false,batteryOnlySavingGbp:2},forceNet:{available:true,value:10}},
- {day:'2026-10-03',savings:{available:true,batteryOnlySavingGbp:-.5,value:4},solarStorage:{available:true,houseSolarOpportunityGbp:.03,solarExportGainGbp:-.05},forceNet:{available:true,value:.25,excludesSolarOrigin:true}}
+ {day:'2026-10-03',savings:{available:true,batteryOnlySavingGbp:-.5,value:4},solarStorage:{available:true,houseSolarOpportunityGbp:.03,solarExportGainGbp:-.05},directSolarUplift:{available:true,value:0},forceNet:{available:true,value:.25,excludesSolarOrigin:true}}
 ]);
 assert.equal(validExtract.length,2);
-const overlapping=payback.extract([{day:'2026-10-04',savings:{available:true,batteryOnlySavingGbp:1},solarStorage:{available:true,houseSolarOpportunityGbp:.1,solarExportGainGbp:.15},forceNet:{available:true,value:.25}}]);
+const overlapping=payback.extract([{day:'2026-10-04',savings:{available:true,batteryOnlySavingGbp:1},solarStorage:{available:true,houseSolarOpportunityGbp:.1,solarExportGainGbp:.15},directSolarUplift:{available:true,value:0},forceNet:{available:true,value:.25}}]);
 assert.equal(overlapping[0].incrementalForceProfitGbp,null,'Generic force profit cannot double count solar ROI');
 eq(validExtract[0].batterySavingGbp,1.0,'Battery-only after solar house opportunity');
 eq(validExtract[0].solarStorageGainGbp,.12,'Solar-origin net export arbitrage counted');
+eq(validExtract[0].directSolarUpliftGbp,.05,'Direct solar tariff premium counted separately');
 assert.equal(validExtract[0].incrementalForceProfitGbp,null);
 eq(validExtract[1].incrementalForceProfitGbp,.25,'Real confirmed non-solar increment');
 assert.equal(demo.days.length,31);
