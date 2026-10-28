@@ -49,11 +49,11 @@ function setup(){
  const calendar=document.getElementById('v4Calendar');if(!calendar)return;
  calendar.querySelector('h3').textContent='Savings, earnings & Happy Hours';
  for(const p of Array.from(calendar.children).filter(x=>x.tagName==='P'))p.remove();
- const intro=document.createElement('p');intro.className='note';intro.textContent='Daily P&L = actual export earnings − all actual grid import costs (house, battery and EV). Green means net earned; red means net cost. Standing charges and avoided-import savings are separate. Each date represents the accounting day ending at 23:30. Happy Hour selections use their calendar date.';
+ const intro=document.createElement('p');intro.id='foxCalendarExplanation';intro.className='note';intro.textContent='Daily P&L = actual export earnings − all actual grid import costs (house, battery and EV). Green means net earned; red means net cost. Standing charges and avoided-import savings are separate. Each date represents the accounting day ending at 23:30. Happy Hour selections use their calendar date.';
  calendar.querySelector('h3').after(intro);
  const summary=document.createElement('div');summary.id='foxCalendarMonthPnl';summary.setAttribute('aria-live','polite');
  const grid=document.getElementById('v4CalendarGrid');grid.before(summary);
- const legend=document.createElement('p');legend.className='note';legend.textContent='Green: net earned · Red: net cost · —: readings unavailable. Tap a date to record Happy Hours or other Octopus sessions you have joined.';grid.after(legend);
+ const legend=document.createElement('p');legend.id='foxCalendarLegend';legend.className='note';legend.textContent='Green: net earned · Red: net cost · —: readings unavailable. Tap a date to record Happy Hours or other Octopus sessions you have joined.';grid.after(legend);
  const actual=document.getElementById('foxActualCosts');if(actual&&actual.parentElement===calendar.parentElement)actual.before(calendar);
  const original=v4RenderCalendar;
  v4RenderCalendar=function(...args){original(...args);render();};
