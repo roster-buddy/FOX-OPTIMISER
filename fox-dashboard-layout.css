@@ -175,3 +175,14 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxSeasonalDemo #foxSeasonalReset{margin:3px 0 7px;white-space:normal}
 #foxSeasonalDemo #foxSeasonalInputStatus{min-height:1.5em}
 @media(max-width:600px){#foxSeasonalDemo .fox-seasonal-inputs{grid-template-columns:1fr}}
+
+/* Optional roof-specific next-day PUBLIC weather lookup; never metered data. */
+#foxRoofWeather{margin:20px 0;padding:16px;border:1px solid #537a91;border-radius:12px;background:#172b35;color:#e8f4fa}
+#foxRoofWeather h4{margin:0 0 8px;color:#d4f1ff}
+#foxRoofWeather .note{color:#c2dce9;font-size:12px;line-height:1.6}
+#foxRoofWeather .fox-roof-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+#foxRoofWeather .fox-roof-inputs label{font-size:12px;color:#d4ebf6}
+#foxRoofWeather .fox-roof-inputs input{display:block;box-sizing:border-box;width:100%;min-width:0;margin-top:5px;padding:9px;border:1px solid #7192a5;border-radius:7px;background:#101d26;color:#f1f9ff;font-size:16px}
+#foxRoofWeather #foxRoofResult{padding:10px;background:#203946;border-radius:8px}
+@media(max-width:620px){#foxRoofWeather .fox-roof-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){#foxRoofWeather .fox-roof-inputs{grid-template-columns:1fr}}
