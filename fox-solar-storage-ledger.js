@@ -40,8 +40,10 @@ function trace(rows,opts={}){
     row.exportToGridAcKwh>row.exportDischargedDcKwh+1e-6)
    return fail('Delivered battery AC exceeds its DC discharge on '+row.day);
   if(!opts.simulation && (row.exportAttributionVerified!==true||
-    row.solarInputVerified!==true||row.directRateVerified!==true))
-   return fail('Solar input, metered battery-origin export and alternative tariff must be verified');
+    row.solarInputVerified!==true||row.directRateVerified!==true||
+    row.directExportOpportunityVerified!==true||
+    row.chargingOriginVerified!==true))
+   return fail('Actual profit requires validated solar-to-battery origin, battery-to-grid export, historical direct-export rate and direct-export feasibility within the site export limit');
   const previousSolar=solarDc;
   solarDc+=row.solarStoredDcKwh;
   gridDc+=row.gridStoredDcKwh;
