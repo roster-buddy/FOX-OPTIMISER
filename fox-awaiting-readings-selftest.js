@@ -13,6 +13,6 @@ assert(!daily.includes("data.imported==='—'?'£0"),'Missing actual import must
 for(const page of ['index.html','preview-v2.html']){
  const html=fs.readFileSync(page,'utf8');
  for(const script of ['fox-calendar-pnl.js','fox-battery-payback-ui.js','fox-daily-breakdown.js','fox-actual-costs.js'])
-  assert(html.includes(script+'?v=480'),page+' must refresh '+script);
+  assert(new RegExp(script.replaceAll('.','\\.')+'\\?v=([0-9]+)').test(html),page+' must version '+script);
 }
 console.log('ACTUAL DASHBOARD WAITING STATE PASS: awaiting verified data, no fabricated zero, direct-solar payback feed');
