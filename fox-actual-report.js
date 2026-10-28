@@ -44,7 +44,7 @@ function build(endDay,input,now){
   gridExport.available&&attributed.solarGridExportAcKwh<=batteryExport.total+1e-6&&
   attributed.solarGridExportAcKwh<=gridExport.total+1e-6;
  const solarStorage=attributedReady?
-  {available:true,value:attributed.solarExportGainGbp,
+  {available:true,value:attributed.solarExportGainGbp,total:attributed.solarGridExportAcKwh,
    day:endDay,...attributed,dcToAc:measuredSolar.losses,method:ledger.method}:
   {available:false,reason:!attributed?(ledger.available?
    'No source-attributed solar/battery history for selected day':ledger.reason):
