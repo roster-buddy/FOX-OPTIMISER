@@ -241,3 +241,14 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxDayTimeline .fox-timeline-list time{color:#c6d6e9;font-variant-numeric:tabular-nums}
 #foxDayTimeline .fox-timeline-list strong{white-space:nowrap}
 @media(max-width:700px){#foxDayTimeline .fox-timeline-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxDayTimeline .fox-timeline-list li{grid-template-columns:1fr auto}#foxDayTimeline .fox-timeline-list time{grid-column:1/-1}#foxDayTimeline .fox-timeline-stats strong{font-size:16px}}
+
+/* v36–38: clear local-session summary, simulation results and preparation checklist */
+#foxSessionMonthRollup{padding:10px 13px;border-left:3px solid #5c91c3;background:#13263a;border-radius:0 8px 8px 0;line-height:1.6}
+#foxStressResults{margin-top:14px}
+#foxStressResults .fox-stress-line{border-left:3px solid #5585a7;background:#13243a;padding:9px 12px;border-radius:0 7px 7px 0}
+#foxSetupGuide .fox-setup-list{display:grid;gap:9px;margin:17px 0}
+#foxSetupGuide .fox-setup-item{display:flex;align-items:flex-start;gap:12px;border:1px solid #334d6b;background:#14263b;border-radius:10px;padding:13px}
+#foxSetupGuide .fox-setup-item input{width:20px;height:20px;flex:none;margin-top:3px;accent-color:#69d6b0}
+#foxSetupGuide .fox-setup-item strong,#foxSetupGuide .fox-setup-item small{display:block}
+#foxSetupGuide .fox-setup-item small{color:#b5c7dd;line-height:1.6;margin-top:4px}
+#foxSetupGuideStatus{font-weight:650}
