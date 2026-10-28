@@ -14,8 +14,8 @@ function setup(){
  main.prepend(intro);main.prepend(nav);
  function category(panel){
   if(['foxActualCosts','v4Calendar','foxBatteryPayback'].includes(panel.id))return 'actual';
-  if(panel.matches('.hero,.metrics')||panel.querySelector('#priceChart,#schedule')||['foxSolarAwareV08Panel','foxDayTimeline'].includes(panel.id))return 'planning';
-  if(panel.querySelector('#settings,#sampleBtn')||['solarV3Panel','foxChargingV06','foxChargeScenarioPanel','foxSessionsV3','exportPowerExplanation'].includes(panel.id))return 'settings';
+  if(panel.matches('.hero,.metrics')||panel.querySelector('#priceChart,#schedule')||['foxSolarAwareV08Panel','foxDayTimeline','foxStressPanel'].includes(panel.id))return 'planning';
+  if(panel.querySelector('#settings,#sampleBtn')||['solarV3Panel','foxChargingV06','foxChargeScenarioPanel','foxSessionsV3','exportPowerExplanation','foxSetupGuide'].includes(panel.id))return 'settings';
   return 'tools';
  }
  function refresh(){
