@@ -5,6 +5,7 @@ const node=typeof module!=='undefined'&&module.exports;
 const dates=node?require('./fox-actual-costs.js'):root.FoxActualCosts;
 const recorded=node?require('./fox-recorded-data.js'):root.FoxRecordedData;
 const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefit;
+const discharge=node?require('./fox-discharge-flow.js'):root.FoxDischargeFlow;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
@@ -24,11 +25,12 @@ function build(endDay,input,now){
   {available:true,value:gridExport.cost-batteryCharge.cost-evCharge.cost,reason:null}:
   unavailable(importCheck.reason||'Complete export earnings, battery charging and EV charging costs required');
  const household=benefit.build(window,input,now);
+ const dischargeFlow=discharge.calculate(input,window,now);
  const gridBalance=gridImport.available&&gridExport.available?
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
  return {importCheck,exportCheck,window,gridImport,gridExport,batteryCharge,evCharge,houseGrid,solarExport,batteryExport,cashBalance,gridBalance,
-  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,
+  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,
   standingCharge:unavailable('Historical standing charge not connected')};
 }
 // Compare matching measured intervals; never spread energy uniformly to force a match.
@@ -50,7 +52,7 @@ function reconcile(streams,keys,window,now,exact){
 }
 function csv(report){
  const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings'];
- if(!report?.window||!keys.some(key=>Number.isFinite(report[key]?.total)))return null;
+ if(!report?.window||(!keys.some(key=>Number.isFinite(report[key]?.total))&&report.dischargeFlow?.available!==true))return null;
  const cell=value=>{
   let text=String(value??'');
   if(/^[=+@\t\r]/.test(text))text="'"+text;
@@ -62,6 +64,16 @@ function csv(report){
   const value=m?.available?(Number.isFinite(m.cost)?m.cost:Number.isFinite(m.value)?m.value:''):'';
   lines.push([new Date(report.window.start).toISOString(),new Date(report.window.end).toISOString(),'Europe/London',key,
    Number.isFinite(m?.total)?m.total:'',value,m?.reason||(m?.available?'Complete recorded data':'Data unavailable')]);
+ }
+ const flow=report.dischargeFlow;
+ for(const [key,amount] of [
+  ['batteryDischargeDC',flow?.available?flow.dcKwh:null],
+  ['batteryDeliveredAC',flow?.available?flow.acKwh:null],
+  ['batteryDCtoACDifference',flow?.available?flow.lossKwh:null]
+ ]){
+  lines.push([new Date(report.window.start).toISOString(),new Date(report.window.end).toISOString(),
+   'Europe/London',key,Number.isFinite(amount)?amount:'','',
+   flow?.reason||(flow?.available?'Verified DC/AC comparison, not grid export':'Data unavailable')]);
  }
  return lines.map(row=>row.map(cell).join(',')).join('\r\n')+'\r\n';
 }

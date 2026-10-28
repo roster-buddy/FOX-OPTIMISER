@@ -61,6 +61,13 @@ function setup(){
    </div>
    <p id="foxHouseStatus" class="note">Household saving: awaiting verified house-only readings.</p>
    <p id="foxForcedStatus" class="note">Force-discharge earnings: awaiting verified battery-to-grid attribution.</p>
+   <h4>Battery discharge measurements</h4>
+   <div class="fox-benefit-grid fox-discharge-grid">
+    <div><small>Battery DC discharge</small><strong id="foxDischargeDC">—</strong></div>
+    <div><small>Battery-only inverter AC output</small><strong id="foxDischargeAC">—</strong></div>
+    <div><small>Measured DC-to-AC difference</small><strong id="foxDischargeLoss">—</strong></div>
+   </div>
+   <p id="foxDischargeStatus" class="note">Discharge comparison unavailable until verified battery-only DC and AC readings are connected. Metered grid export, not battery output, determines paid earnings.</p>
    <p class="note">Force-discharge earnings are already included in total grid export P&L, not additional income to add again. Additional *net* force-discharge profit and savings after foregone solar export are unavailable until traceable energy costs and alternatives are known.</p>
   </section>
   <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
@@ -94,12 +101,18 @@ function setup(){
    currentReport=report;
    if(download)download.disabled=!root.FoxActualReport?.csv(report);
    const money=x=>x?.available&&Number.isFinite(x.value)?((x.value<0?'−£':'£')+Math.abs(x.value).toFixed(2)):'—';
-   const household=report?.savings,force=report?.forceExport;
+   const household=report?.savings,force=report?.forceExport,discharge=report?.dischargeFlow;
    const fill=(selector,value)=>{const el=panel.querySelector(selector);if(el)el.textContent=value;};
    fill('#foxHouseBaseline',household?.available?'£'+household.baselineCost.toFixed(2):'—');
    fill('#foxHouseActual',household?.available?'£'+household.actualCost.toFixed(2):'—');
    fill('#foxHouseSaving',money(household));
    fill('#foxForcedEarned',money(force));
+   fill('#foxDischargeDC',discharge?.available?discharge.dcKwh.toFixed(2)+' kWh':'—');
+   fill('#foxDischargeAC',discharge?.available?discharge.acKwh.toFixed(2)+' kWh':'—');
+   fill('#foxDischargeLoss',discharge?.available?discharge.lossKwh.toFixed(2)+' kWh':'—');
+   fill('#foxDischargeStatus',discharge?.available?
+    'DC-to-AC difference between verified battery-only measurement points. May include inverter auxiliary use. Not the difference between battery energy and metered grid export.':
+    'Discharge comparison unavailable: '+(discharge?.reason||'Waiting for readings'));
    fill('#foxHouseStatus',household?.available?
     'House '+household.houseKwh.toFixed(2)+' kWh · grid '+household.gridKwh.toFixed(2)+' kWh · direct solar '+
     household.solarKwh.toFixed(2)+' kWh · battery '+household.batteryKwh.toFixed(2)+' kWh. Solar opportunity cost tracked separately.':
