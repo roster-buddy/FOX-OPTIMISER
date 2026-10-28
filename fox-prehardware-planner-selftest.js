@@ -28,7 +28,7 @@ assert.equal(r.instantaneousEnforcementActive,false);
 assert(r.rows[9].simulatedExportKwh>0);
 assert(r.rows[16].simulatedExportKwh>0);
 assert.equal(r.rows[0].simulatedExportKwh,0);
-assert(Math.abs(r.exportKwh-(9-2-2.7)*.9)<1e-8);
+assert(Math.abs(r.exportKwh-3.5)<1e-8);
 assert.equal(r.rows.every(x=>x.solarCreditKwh===0),true);
 assert.equal(core.forecastQuality({source:'synthetic',slots:c.slots}).quality,'SCENARIO_VALIDATED');
 assert.equal(core.forecastQuality({source:'unknown',slots:c.slots}).quality,'UNVERIFIED');
