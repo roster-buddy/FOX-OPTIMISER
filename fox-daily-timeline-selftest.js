@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const ui=require('./fox-daily-timeline.js'),planner=require('./fox-prehardware-planner.js');
+const input=ui.sample(),result=planner.planDay(input);
+assert.equal(result.ok,true,result.reason);
+assert.equal(input.slots.length,27);
+assert.equal(result.rows.length,27);
+assert(result.at19Kwh>=2-1e-7);
+assert(result.exportKwh>0);
+assert(result.rows.some(r=>r.simulatedExportKwh>0));
+assert(result.rows.every(r=>r.simulatedExportKw<=3.5+1e-8));
+assert.equal(result.dispatchApproved,false);
+assert.equal(result.accountingApproved,false);
+assert.equal(result.instantaneousEnforcementActive,false);
+assert(result.rows.every(r=>r.solarCreditKwh===0));
+const rows=ui.timeline(result);
+assert.equal(rows.length,27);
+assert(rows.some(r=>r.action.includes('Export')));
+assert(rows.some(r=>r.action.includes('hold')));
+assert(rows[0].time.startsWith('05:30'));
+assert(rows.at(-1).time.endsWith('19:00'));
+assert.deepEqual(ui.timeline({ok:false}),[]);
+const bad=planner.planDay({...input,slots:input.slots.slice(1)});
+assert.equal(bad.ok,false);
+for(const page of ['index.html','preview-v2.html']){
+ const html=fs.readFileSync(page,'utf8');
+ assert(html.includes('fox-daily-timeline.js?v=496'));
+}
+const css=fs.readFileSync('fox-dashboard-layout.css','utf8');
+assert(css.includes('#foxDayTimeline'));
+console.log('DAILY TIMELINE PASS: fictional UK daytime, 20% reserve, zero solar refill, export power, unavailable states and read-only');
