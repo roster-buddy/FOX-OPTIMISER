@@ -52,7 +52,7 @@ function reconcile(streams,keys,window,now,exact){
 }
 function csv(report){
  const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings'];
- if(!report?.window||!keys.some(key=>Number.isFinite(report[key]?.total)))return null;
+ if(!report?.window||(!keys.some(key=>Number.isFinite(report[key]?.total))&&report.dischargeFlow?.available!==true))return null;
  const cell=value=>{
   let text=String(value??'');
   if(/^[=+@\t\r]/.test(text))text="'"+text;
