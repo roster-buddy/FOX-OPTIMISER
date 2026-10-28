@@ -32,6 +32,8 @@ function build(endDay,input,now){
  // All battery source history (including the opening inventory) must be
  // supplied by a verified adapter before solar-origin gains can be claimed.
  const measuredSolar=solarMeters.fromMeters(input,window,now,endDay);
+ const directSolarUplift=measuredSolar.available?directSolar.calculate(measuredSolar.rows):
+  {available:false,reason:measuredSolar.reason,value:null};
  const prior=Array.isArray(input?.solarStorageHistory)?
   input.solarStorageHistory.filter(x=>x.day<endDay):[];
  const inventory=input?.solarOpeningLots;
