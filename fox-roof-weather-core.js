@@ -13,9 +13,9 @@ const londonDate=ms=>{
 };
 function tomorrow(now=Date.now()){
  if(!Number.isFinite(now))throw Error('Invalid forecast clock');
- // Find next calendar date in Europe/London; UTC noon + 1 day cannot skip DST.
- return londonDate(now+36*3600000)===londonDate(now+12*3600000)?
-  londonDate(now+36*3600000):londonDate(now+24*3600000);
+ // Increment the local calendar date itself; UTC offsets can change at DST.
+ const today=londonDate(now);
+ return new Date(Date.parse(today+'T12:00:00Z')+86400000).toISOString().slice(0,10);
 }
 function validate(site){
  if(!site||typeof site!=='object')throw Error('Solar site details required');
