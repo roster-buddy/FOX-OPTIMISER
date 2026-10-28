@@ -60,9 +60,14 @@ function setup(){
  render();
 }
 // For future authenticated adapters only; calculates from validated recorded streams.
-root.FoxCalendarPnl={...api,recordDay(endDay,input,now=Date.now()){
+root.FoxCalendarPnl={...api,
+ getReport(endDay){return reports.get(endDay)||null;},
+ recordDay(endDay,input,now=Date.now()){
  const report=root.FoxActualReport.build(endDay,input,now);
- reports.set(endDay,report);render();return report;
+ reports.set(endDay,report);render();
+ if(typeof CustomEvent==='function'&&typeof document.dispatchEvent==='function')
+  document.dispatchEvent(new CustomEvent('fox:recorded-day-updated',{detail:{day:endDay}}));
+ return report;
 }};
 if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',setup);else setup();
 })(typeof window!=='undefined'?window:globalThis);
