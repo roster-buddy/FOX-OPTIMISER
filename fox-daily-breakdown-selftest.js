@@ -45,4 +45,7 @@ assert.equal(summary.summary(null,null).state,'missing');
 assert(summary.validDay('2026-10-25'));
 assert(!summary.validDay('2026-02-30'));
 assert(!summary.validDay('2026-2-25'));
+const incremental=summary.summary({solarStorage:{available:true,value:.1212416}},{});
+assert.equal(incremental.solarGain,'£0.12');
+assert.equal(summary.summary({},{}).solarGain,'—');
 console.log('DAILY BREAKDOWN PASS: recorded-only green/red/neutral, missing-data and calendar sessions');
