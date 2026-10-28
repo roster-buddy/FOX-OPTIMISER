@@ -226,3 +226,18 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxDashboardIntro .fox-dashboard-shortcut{margin-top:14px;background:#234d48;color:#b6f5dd}
 #foxDashboardNav button{white-space:normal;line-height:1.3}
 @media(max-width:720px){#foxDashboardIntro .fox-summary{grid-template-columns:1fr;gap:8px;margin-top:16px}#foxDashboardIntro .fox-summary-tile{padding:12px 14px}#foxDashboardIntro .fox-summary-tile strong{font-size:17px;margin:3px 0}#foxDashboardIntro .fox-dashboard-shortcut{width:100%}}
+
+/* v35: clearly fictional opt-in day timeline, responsive and screen-reader-friendly. */
+#foxDayTimeline{border-color:#466383!important}
+#foxDayTimeline>button{margin:14px 0}
+#foxDayTimelineOutput:empty{display:none}
+#foxDayTimeline .fox-timeline-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:10px 0 18px}
+#foxDayTimeline .fox-timeline-stats>div{background:#182c42;border:1px solid #3c5672;border-radius:10px;padding:12px;min-width:0}
+#foxDayTimeline .fox-timeline-stats small{display:block;color:#b6c9e0;font-size:12px}
+#foxDayTimeline .fox-timeline-stats strong{display:block;font-size:18px;margin-top:8px;overflow-wrap:anywhere}
+#foxDayTimeline .fox-timeline-list{list-style:none;padding:0;margin:12px 0;max-height:420px;overflow:auto}
+#foxDayTimeline .fox-timeline-list li{display:grid;grid-template-columns:120px 1fr auto;gap:10px;align-items:center;border-left:4px solid #54718e;background:#17263a;border-radius:7px;padding:10px 12px;margin-bottom:6px;font-size:13px}
+#foxDayTimeline .fox-timeline-list li.fox-timeline-export{border-left-color:#67e0b3;background:#17382f}
+#foxDayTimeline .fox-timeline-list time{color:#c6d6e9;font-variant-numeric:tabular-nums}
+#foxDayTimeline .fox-timeline-list strong{white-space:nowrap}
+@media(max-width:700px){#foxDayTimeline .fox-timeline-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxDayTimeline .fox-timeline-list li{grid-template-columns:1fr auto}#foxDayTimeline .fox-timeline-list time{grid-column:1/-1}#foxDayTimeline .fox-timeline-stats strong{font-size:16px}}
