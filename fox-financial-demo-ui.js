@@ -25,25 +25,28 @@ function setup(){
  '  <span id="foxDemoEvHint">EV is always excluded from household savings.</span></div>',
  ' <h4>Illustrative October 2026 total · 31 simulated days</h4>',
  ' <div class="fox-demo-stats">',
- '  <div><small>Household bill saved · EV excluded</small><strong id="foxDemoMonthSaved"></strong></div>',
+ '  <div><small>Battery-to-house saving · EV excluded</small><strong id="foxDemoMonthSaved"></strong></div>',
  '  <div><small>Forced battery export receipts · gross</small><strong id="foxDemoMonthForce"></strong></div>',
- '  <div><small>Battery charging energy lost</small><strong id="foxDemoMonthChargeLoss"></strong></div>',
- '  <div><small>Battery discharge energy lost</small><strong id="foxDemoMonthDischargeLoss"></strong></div>',
+ '  <div><small>£4,800 payback · still to recover</small><strong id="foxDemoMonthRemaining"></strong></div>',
+ '  <div><small>Break-even · flat-rate illustration</small><strong id="foxDemoMonthBreakEven"></strong></div>',
  ' </div><p id="foxDemoMonthExplanation" class="note"></p>',
+ ' <details class="foxDisclosure"><summary>Example charging and discharging losses (technical)</summary>',
+ '  <p class="note">Illustrative charging loss <span id="foxDemoMonthChargeLoss"></span> · discharge loss <span id="foxDemoMonthDischargeLoss"></span>. These costs are already included in the battery purchase allocation.</p>',
+ ' </details>',
  ' <h4>Pick a sample day</h4>',
  ' <div id="foxDemoMonthDays" class="fox-demo-calendar" role="group" aria-label="Illustrative October 2026 days"></div>',
  ' <div class="fox-demo-day"><h4 id="foxDemoDayHeading">SIMULATED DAY</h4>',
  '  <div class="fox-demo-stats">',
- '   <div><small>House cost without solar/battery</small><strong id="foxDemoBaseline"></strong></div>',
+ '   <div><small>House cost with solar but without battery</small><strong id="foxDemoBaseline"></strong></div>',
  '   <div><small>House supply cost incl. allocated battery charging</small><strong id="foxDemoHouseCost"></strong></div>',
- '   <div><small>Household bill saved · EV excluded</small><strong id="foxDemoHouseSaved"></strong></div>',
+ '   <div><small>Battery-to-house saving · EV excluded</small><strong id="foxDemoHouseSaved"></strong></div>',
  '   <div><small>Forced battery grid export · gross receipts</small><strong id="foxDemoForcedIncome"></strong></div>',
  '  </div><div class="fox-demo-flow" id="foxDemoHouseFlow"></div>',
  '  <div class="fox-demo-flow" id="foxDemoBatteryFlow"></div>',
  '  <details class="foxDisclosure"><summary>Example discharge costs, export and cash balance</summary>',
  '   <div id="foxDemoDetail" class="fox-demo-detail"></div></details>',
  ' </div>',
- ' <p class="fox-demo-caution">All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Household bill savings do not subtract foregone solar export value. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
+ ' <p class="fox-demo-caution">Payback uses the battery-only saving, not direct solar savings or gross export. Forced-export net incremental profit is excluded because the no-discharge alternative is unknown. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Household bill savings do not subtract foregone solar export value. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
  '</div>'
  ].join('');
  const heading=actual.querySelector('h2');if(!heading)return;heading.after(el);
@@ -55,9 +58,9 @@ function setup(){
   const button=doc.createElement('button');
   button.type='button';button.className='fox-demo-day-button';button.dataset.day=String(day.day);
   const number=doc.createElement('strong');number.textContent=String(day.day);
-  const value=doc.createElement('small');value.textContent=money(day.houseSavingGbp);
+  const value=doc.createElement('small');value.textContent=money(day.batteryOnlySavingGbp);
   button.append(number,value);
-  button.setAttribute('aria-label','Simulated October '+day.day+', house saving '+money(day.houseSavingGbp));
+  button.setAttribute('aria-label','Simulated October '+day.day+', battery-to-house saving '+money(day.batteryOnlySavingGbp));
   button.addEventListener('click',()=>{chosen=day.day;renderDay();});
   days.append(button);
  }
@@ -67,9 +70,9 @@ function setup(){
   set('foxDemoDayHeading','DEMO · '+new Intl.DateTimeFormat('en-GB',{
    day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
   }).format(new Date(d.date+'T12:00:00Z')));
-  set('foxDemoBaseline',money(d.houseBaselineGbp));
+  set('foxDemoBaseline',money(d.baselineWithoutBatteryGbp));
   set('foxDemoHouseCost',money(d.houseActualSupplyGbp));
-  set('foxDemoHouseSaved',money(d.houseSavingGbp));
+  set('foxDemoHouseSaved',money(d.batteryOnlySavingGbp));
   set('foxDemoForcedIncome',money(d.forcedExportReceiptsGbp));
   set('foxDemoHouseFlow','House '+kwh(d.houseDemandKwh)+
     ' = grid '+kwh(d.houseGridKwh)+' + direct solar '+kwh(d.houseSolarKwh)+
@@ -93,14 +96,21 @@ function setup(){
  }
  function render(){
   const t=sample.totals;
-  set('foxDemoMonthSaved',money(t.houseSavingGbp));
+  set('foxDemoMonthSaved',money(t.batteryOnlySavingGbp));
+  const remaining=Math.max(0,4800-t.batteryOnlySavingGbp);
+  set('foxDemoMonthRemaining',money(remaining));
+  if(t.batteryOnlySavingGbp>0){
+   const months=Math.ceil(remaining/t.batteryOnlySavingGbp);
+   const horizon=new Date(Date.UTC(2026,10+months,1));
+   set('foxDemoMonthBreakEven',horizon.toISOString().slice(0,7));
+  } else set('foxDemoMonthBreakEven','No payback at this rate');
   set('foxDemoMonthForce',money(t.forcedExportReceiptsGbp));
   set('foxDemoMonthChargeLoss',kwh(t.batteryChargeLossKwh));
   set('foxDemoMonthDischargeLoss',kwh(t.batteryDischargeLossKwh));
   set('foxDemoMonthExplanation','House use '+kwh(t.houseDemandKwh)+
    ' · EV separately '+kwh(t.evGridKwh)+' (cost '+money(t.evImportCostGbp)+
    ') · illustrative grid cash balance including EV '+money(t.netGridCashGbp)+
-   '. Stored battery costs carry across days; no actual readings were loaded.');
+   '. Payback illustration repeats the SAME hypothetical October battery-only saving every month; it is not seasonal modelling or an AI prediction. No actual readings were loaded.');
   renderDay();
  }
  toggle.addEventListener('click',()=>{

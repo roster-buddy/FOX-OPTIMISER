@@ -18,7 +18,7 @@ const KEYS=[
  'batteryChargeLossKwh','batteryDcDischargeKwh','batteryAcDeliveredKwh',
  'batteryDischargeLossKwh','forceGridExportKwh','meteredGridExportKwh',
  'gridImportKwh','houseBaselineGbp','houseActualSupplyGbp',
- 'houseSavingGbp','houseGridCostGbp','houseBatteryCostGbp',
+ 'houseSavingGbp','batteryOnlySavingGbp','baselineWithoutBatteryGbp','houseGridCostGbp','houseBatteryCostGbp',
  'gridBatteryChargeCostGbp','evImportCostGbp',
  'forcedExportReceiptsGbp','solarExportReceiptsGbp',
  'totalExportReceiptsGbp','totalGridImportCostGbp','netGridCashGbp',
@@ -74,6 +74,11 @@ function makeMonth(options={}){
    houseDayGridKwh*PARAMS.peakImportGbp;
   const houseActualSupplyGbp=houseGridCostGbp+houseBatteryCostGbp;
   const houseSavingGbp=houseBaselineGbp-houseActualSupplyGbp;
+  // Battery payback assumes solar remains installed without the battery.
+  // Never claim direct solar-to-house savings as a battery benefit.
+  const baselineWithoutBatteryGbp=houseNightKwh*PARAMS.cheapImportGbp+
+   (houseDayKwh-houseSolarKwh)*PARAMS.peakImportGbp;
+  const batteryOnlySavingGbp=baselineWithoutBatteryGbp-houseActualSupplyGbp;
   const evImportCostGbp=evGridKwh*PARAMS.cheapImportGbp;
   const gridImportKwh=houseGridKwh+batteryGridChargeKwh+evGridKwh;
   const totalGridImportCostGbp=houseGridCostGbp+gridBatteryChargeCostGbp+evImportCostGbp;
@@ -94,7 +99,7 @@ function makeMonth(options={}){
       solarBatteryInputKwh,solarExportKwh,batteryGridChargeKwh,
       batteryChargeLossKwh,batteryDcDischargeKwh,batteryAcDeliveredKwh,
       batteryDischargeLossKwh,forceGridExportKwh,meteredGridExportKwh,
-      gridImportKwh,houseBaselineGbp,houseActualSupplyGbp,houseSavingGbp,
+      gridImportKwh,houseBaselineGbp,houseActualSupplyGbp,houseSavingGbp,batteryOnlySavingGbp,baselineWithoutBatteryGbp,
       houseGridCostGbp,houseBatteryCostGbp,gridBatteryChargeCostGbp,
       evImportCostGbp,forcedExportReceiptsGbp,solarExportReceiptsGbp,
       totalExportReceiptsGbp,totalGridImportCostGbp,netGridCashGbp,
