@@ -25,9 +25,9 @@ function create(){
   if(lastClock!==null&&now<lastClock)return stop('Clock moved backwards');
   lastClock=now;return null;
  };
- const planOk=(plan,now)=>{
+ const planOk=(plan,now,allowActive=false)=>{
   if(!plan||typeof plan.id!=='string'||!plan.id.trim()||
-    plan.id.length>128||usedIds.has(plan.id))
+    plan.id.length>128||(usedIds.has(plan.id)&&!(allowActive&&active?.id===plan.id)))
    return 'New, unused plan ID required';
   if(!finite(plan.createdAt)||!finite(plan.expiresAt)||
     plan.createdAt>now||plan.expiresAt<=now||
@@ -49,7 +49,7 @@ function create(){
    if(!plan||plan.id!==active.id||plan.createdAt!==active.createdAt||
       plan.expiresAt!==active.expiresAt||plan.kw!==active.kw)
     return stop('Active plan changed or missing');
-   if(planOk(plan,now))return stop('Active plan expired or invalid');
+   if(planOk(plan,now,true))return stop('Active plan expired or invalid');
    reason='Diagnostic simulation armed; no inverter control';
    return output();
   },
