@@ -38,19 +38,28 @@ function setup(){
  ' <h4>Pick a sample day</h4>',
  ' <div id="foxDemoMonthDays" class="fox-demo-calendar" role="group" aria-label="Illustrative October 2026 days"></div>',
  ' <div class="fox-demo-day"><h4 id="foxDemoDayHeading">SIMULATED DAY</h4>',
- '  <div class="fox-demo-stats">',
- '   <div><small>House cost with solar but without battery</small><strong id="foxDemoBaseline"></strong></div>',
- '   <div><small>House supply cost incl. allocated battery charging</small><strong id="foxDemoHouseCost"></strong></div>',
- '   <div><small>Battery-house saving · net of solar opportunity cost</small><strong id="foxDemoHouseSaved"></strong></div>',
- '   <div><small>Forced battery grid export · gross receipts</small><strong id="foxDemoForcedIncome"></strong></div>',
- '   <div><small>Additional stored-solar export gain</small><strong id="foxDemoDaySolarGain"></strong></div>',
+ '  <p class="fox-demo-key-label">Daily battery benefit · illustrative, not your actual earnings</p>',
+ '  <div class="fox-demo-stats fox-demo-primary-stats">',
+ '   <div class="fox-demo-main-saving"><small>Battery-house saving · after foregone solar export</small><strong id="foxDemoHouseSaved"></strong></div>',
+ '   <div><small>Extra stored-solar export profit · after wear</small><strong id="foxDemoDaySolarGain"></strong></div>',
  '   <div><small>Direct solar Agile uplift above 12p</small><strong id="foxDemoDayDirectSolar"></strong></div>',
- '  </div><div class="fox-demo-flow" id="foxDemoHouseFlow"></div>',
- '  <div class="fox-demo-flow" id="foxDemoBatteryFlow"></div>',
- '  <details class="foxDisclosure"><summary>Example discharge costs, export and cash balance</summary>',
+ '  </div>',
+ '  <p class="fox-demo-key-label">Separate cash received · not automatically extra profit</p>',
+ '  <div class="fox-demo-cash-line"><span>Forced battery export · gross receipts</span><strong id="foxDemoForcedIncome"></strong></div>',
+ '  <details class="foxDisclosure fox-demo-explanation"><summary>Compare household costs and energy flows</summary>',
+ '   <div class="fox-demo-stats fox-demo-secondary-stats">',
+ '    <div><small>House cost with solar but without battery</small><strong id="foxDemoBaseline"></strong></div>',
+ '    <div><small>House supply cost incl. allocated battery charging</small><strong id="foxDemoHouseCost"></strong></div>',
+ '   </div>',
+ '   <div class="fox-demo-flow" id="foxDemoHouseFlow"></div>',
+ '   <div class="fox-demo-flow" id="foxDemoBatteryFlow"></div>',
+ '  </details>',
+ '  <details class="foxDisclosure fox-demo-explanation"><summary>Technical export, discharge costs and meter balance</summary>',
  '   <div id="foxDemoDetail" class="fox-demo-detail"></div></details>',
  ' </div>',
- ' <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. PLUS direct-solar-only Agile uplift above 12p (floored at zero per day). It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Battery investment recovery DOES subtract foregone solar export from battery-to-house use; raw meter bill comparisons do not. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
+ ' <details class="foxDisclosure fox-demo-explanation fox-demo-method"><summary>How this fictional payback calculation works</summary>',
+ '  <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. PLUS direct-solar-only Agile uplift above 12p (floored at zero per day). It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Battery investment recovery DOES subtract foregone solar export from battery-to-house use; raw meter bill comparisons do not. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
+ ' </details>',
  '</div>'
  ].join('');
  const heading=actual.querySelector('h2');if(!heading)return;heading.after(el);
@@ -87,25 +96,46 @@ function setup(){
     ' + solar '+kwh(d.solarBatteryInputKwh)+' → charging loss '+kwh(d.batteryChargeLossKwh)+
     '. Discharge: DC '+kwh(d.batteryDcDischargeKwh)+' → AC '+kwh(d.batteryAcDeliveredKwh)+
     ' (loss '+kwh(d.batteryDischargeLossKwh)+').');
-  set('foxDemoDetail','SOLAR ORIGIN EXAMPLE: solar diverted into battery '+kwh(d.solarStorage.solarChargeInputAcKwh)+
-    '; solar-attributed battery electricity reaching grid '+kwh(d.solarStorage.solarGridExportAcKwh)+
-    '; paid export '+money(d.solarStorage.solarGridRevenueGbp)+
-    '; direct solar export foregone at 12p per input kWh '+money(d.solarStorage.exportSolarOpportunityGbp)+
-    '; attributed battery wear '+money(d.solarStorage.solarExportWearGbp)+
-    '; additional profit '+money(d.solarStorage.solarExportGainGbp)+
-    '. Solar used from battery in house forgoes '+money(d.solarStorage.houseSolarOpportunityGbp)+
-    ' potential direct export, deducted from house saving. DEMO: battery grid export '+kwh(d.forceGridExportKwh)+
-    ' earns '+money(d.forcedExportReceiptsGbp)+
-    '. Allocated battery purchase cost '+money(d.forceBatteryCostGbp)+
-    ', assumed wear '+money(d.forceWearGbp)+
-    ' gives a margin before forgone alternatives of '+money(d.forceMarginBeforeAlternativeGbp)+
-    '. Solar grid export '+kwh(d.solarExportKwh)+' earns '+money(d.solarExportReceiptsGbp)+
-    '. Combined hypothetical metered export '+kwh(d.meteredGridExportKwh)+
-    ' earns '+money(d.totalExportReceiptsGbp)+
-    '. Total meter import cost, including EV '+money(d.totalGridImportCostGbp)+
-    ', makes grid cash balance '+money(d.netGridCashGbp)+
-    '. EV alone costs '+money(d.evImportCostGbp)+
-    '. A weighted stored-energy purchase-cost pool carries forward across days. The £4,800 recovery demonstration additionally deducts foregone direct solar export value. Solar is retained for export under an illustrative source-allocation assumption, not physically identifiable electrons.');
+  const detail=byId('foxDemoDetail');
+  detail.replaceChildren();
+  const sections=[
+   ['Solar energy attributed to battery',[
+    ['Solar diverted into battery',kwh(d.solarStorage.solarChargeInputAcKwh)],
+    ['Solar-attributed battery electricity reaching grid',kwh(d.solarStorage.solarGridExportAcKwh)],
+    ['Export receipts',money(d.solarStorage.solarGridRevenueGbp)],
+    ['Foregone direct export at 12p',money(d.solarStorage.exportSolarOpportunityGbp)],
+    ['Attributed battery wear',money(d.solarStorage.solarExportWearGbp)],
+    ['Additional stored-solar export gain',money(d.solarStorage.solarExportGainGbp)],
+    ['Solar export value foregone by battery-to-house use',money(d.solarStorage.houseSolarOpportunityGbp)]
+   ]],
+   ['Battery export and grid cash',[
+    ['Battery export',kwh(d.forceGridExportKwh)],
+    ['Gross battery export receipts',money(d.forcedExportReceiptsGbp)],
+    ['Allocated battery purchase cost',money(d.forceBatteryCostGbp)],
+    ['Assumed battery wear',money(d.forceWearGbp)],
+    ['Margin before foregone alternatives',money(d.forceMarginBeforeAlternativeGbp)],
+    ['Direct solar export',kwh(d.solarExportKwh)],
+    ['Direct solar export receipts',money(d.solarExportReceiptsGbp)],
+    ['Combined metered export',kwh(d.meteredGridExportKwh)],
+    ['Combined export receipts',money(d.totalExportReceiptsGbp)],
+    ['Total meter import cost including EV',money(d.totalGridImportCostGbp)],
+    ['Grid cash balance',money(d.netGridCashGbp)],
+    ['EV charging cost',money(d.evImportCostGbp)]
+   ]]
+  ];
+  for(const [heading,rows] of sections){
+   const h=doc.createElement('h5');h.textContent=heading;detail.append(h);
+   const dl=doc.createElement('dl');dl.className='fox-demo-detail-list';
+   for(const [label,value] of rows){
+    const dt=doc.createElement('dt');dt.textContent=label;
+    const dd=doc.createElement('dd');dd.textContent=value;
+    dl.append(dt,dd);
+   }
+   detail.append(dl);
+  }
+  const note=doc.createElement('p');note.className='note';
+  note.textContent='DEMO assumptions: weighted stored-energy purchase costs carry forward between days. The £4,800 recovery example subtracts foregone direct solar export value. Solar attribution is an accounting assumption, not physically identifiable electrons.';
+  detail.append(note);
  }
  function render(){
   const t=sample.totals;

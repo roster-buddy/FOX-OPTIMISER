@@ -5,6 +5,7 @@ const ids={};
 function node(tag='div'){
  const n={tagName:tag.toUpperCase(),children:[],dataset:{},attrs:{},hidden:false,
   textContent:'',events:{},className:'',append(...els){this.children.push(...els);},
+  replaceChildren(...els){this.children=[...els];this.textContent='';},
   setAttribute(k,v){this.attrs[k]=v;},
   addEventListener(k,cb){this.events[k]=cb;},
   querySelectorAll(tag){return this.children.filter(e=>e.tagName===tag.toUpperCase());},
@@ -52,6 +53,8 @@ ids.foxDemoMonthDays.children[17].events.click();
 assert.match(ids.foxDemoDayHeading.textContent,/18 October 2026/);
 assert.equal(ids.foxDemoMonthDays.children[17].attrs['aria-pressed'],'true');
 assert.match(ids.foxDemoHouseFlow.textContent,/EV/);
+assert.equal(ids.foxDemoDetail.children.length,5,'Two labelled technical sections plus accounting note');
+assert.equal(ids.foxDemoDetail.children[1].tagName,'DL');
 const saved=ids.foxDemoHouseSaved.textContent,force=ids.foxDemoForcedIncome.textContent;
 ids.foxDemoIncludeEV.checked=false;
 ids.foxDemoIncludeEV.events.change();
