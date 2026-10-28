@@ -104,3 +104,20 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #foxFinancialDemo .fox-demo-detail{font-size:13px;line-height:1.7;color:#ecdbbf;padding-bottom:15px}
 #foxFinancialDemo .fox-demo-caution{font-size:12px;line-height:1.65;color:#f2d5a9;margin:18px 0 0}
 @media(max-width:700px){#foxFinancialDemo{padding:12px}#foxFinancialDemo .fox-demo-heading{align-items:stretch;flex-direction:column}#foxFinancialDemo .fox-demo-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxFinancialDemo .fox-demo-stats strong{font-size:18px}#foxFinancialDemo .fox-demo-calendar{gap:3px}#foxFinancialDemo .fox-demo-day-button{padding:5px 2px;min-height:46px}#foxFinancialDemo .fox-demo-day-button small{font-size:9px}}
+
+/* Battery bill savings and £4,800 investment recovery; never mix with DEMO. */
+#foxBatteryPayback{margin:18px 0;padding:20px;border:1px solid #3d826a;border-radius:14px;background:#112d2a}
+#foxBatteryPayback .fox-payback-title{display:flex;align-items:center;justify-content:space-between;gap:14px}
+#foxBatteryPayback .fox-payback-title h3{margin:5px 0!important;color:#e8fff4}
+#foxBatteryPayback .fox-payback-eyebrow{font-size:11px;letter-spacing:.06em;font-weight:750;color:#9af0cd}
+#foxBatteryPayback .fox-payback-target{white-space:nowrap;font-size:14px;background:#254a40;border:1px solid #42947c;border-radius:8px;padding:9px}
+#foxBatteryPayback .fox-payback-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:15px 0}
+#foxBatteryPayback .fox-payback-stats>div{padding:13px;border-radius:10px;background:#1d3b35;border:1px solid #386758;min-width:0}
+#foxBatteryPayback .fox-payback-stats small{font-size:12px;color:#b5ddcc;line-height:1.4;display:block}
+#foxBatteryPayback .fox-payback-stats strong{font-size:20px;font-variant-numeric:tabular-nums;display:block;margin-top:8px}
+#foxBatteryPayback .fox-payback-track{height:13px;background:#10231f;border:1px solid #3c6c5a;border-radius:100px;overflow:hidden;margin:17px 0}
+#foxBatteryPayback #foxPaybackFill{background:#75e5b5;height:100%;width:0;transition:width .25s ease}
+#foxBatteryPayback .note{font-size:13px;color:#b7d9cd}
+#foxFinancialDemo .fox-demo-stats>div:nth-child(3){border-color:#b48a4b}
+@media(max-width:740px){#foxBatteryPayback .fox-payback-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#foxBatteryPayback .fox-payback-stats strong{font-size:18px}#foxBatteryPayback .fox-payback-title{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){#foxBatteryPayback #foxPaybackFill{transition:none}}
