@@ -87,7 +87,7 @@ function setup(){
 root.FoxCalendarPnl={...api,
  getReport(endDay){return reports.get(endDay)||null;},
  // Verified in-memory accounting days only. Does not include demos or guessed readings.
- getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet}));},
+ getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet,solarStorage:entry[1].solarStorage}));},
  recordDay(endDay,input,now=Date.now()){
  const report=root.FoxActualReport.build(endDay,input,now);
  reports.set(endDay,report);render();
