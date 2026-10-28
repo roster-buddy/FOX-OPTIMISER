@@ -64,7 +64,6 @@ function fromMeters(input,window,now,day){
   const pDirect=recorded.price([r.solarToBatteryAc],tariffs.directExport,interval,now);
   if(!pExport.available||!pDirect.available)
    return fail('Unverified actual/alternative historical export rate: '+(pExport.reason||pDirect.reason));
-  const salePence=pExport.cost/r.gridExport.value; // only if nonzero; use the tariff covering the interval below.
   const match=t=>t.filter(rate=>rate.start<=interval.start&&rate.end>=interval.end);
   const exportRate=match(tariffs.export),directRate=match(tariffs.directExport);
   if(exportRate.length!==1||directRate.length!==1)
