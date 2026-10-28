@@ -5,7 +5,7 @@ function setup(){
  const main=document.querySelector('main');if(!main||document.getElementById('foxDashboardNav'))return;
  const nav=document.createElement('nav');nav.id='foxDashboardNav';nav.setAttribute('aria-label','Dashboard sections');
  const intro=document.createElement('div');intro.id='foxDashboardIntro';
- const groups={actual:['Daily costs','Your recorded electricity day','Actual costs, exports and savings for 23:30–23:30.'],planning:['Planning','Plan the next day','Forecasts and Agile export scenarios. These are separate from your actual costs.'],settings:['Settings','Your setup','Battery assumptions, solar location and charging inputs.'],tools:['Advanced','Research and checks','Historical simulations, learning logs and development checks.']};
+ const groups={actual:['Daily costs','Your electricity finances','Actual grid import, export, battery savings and your monthly calendar. Figures stay unavailable until measured readings are connected.'],planning:['Planning','Your battery plan','Explore public Agile prices and clearly labelled forecast scenarios. These are not live battery instructions.'],settings:['Settings','Your home setup','Manage planning assumptions, solar location and charging scenarios.'],tools:['Advanced','Research and testing','Optional historical simulations, demo finances and technical diagnostics.']};
  let active='actual';const buttons={};
  for(const [key,[label]] of Object.entries(groups)){
   const button=document.createElement('button');button.type='button';button.textContent=label;button.className='secondary';
@@ -13,7 +13,7 @@ function setup(){
  }
  main.prepend(intro);main.prepend(nav);
  function category(panel){
-  if(['foxActualCosts','v4Calendar'].includes(panel.id))return 'actual';
+  if(['foxActualCosts','v4Calendar','foxBatteryPayback'].includes(panel.id))return 'actual';
   if(panel.matches('.hero,.metrics')||panel.querySelector('#priceChart,#schedule')||panel.id==='foxSolarAwareV08Panel')return 'planning';
   if(panel.querySelector('#settings,#sampleBtn')||['solarV3Panel','foxChargingV06','foxChargeScenarioPanel','foxSessionsV3','exportPowerExplanation'].includes(panel.id))return 'settings';
   return 'tools';
@@ -25,7 +25,39 @@ function setup(){
   active=key;
   for(const [name,button] of Object.entries(buttons)){button.setAttribute('aria-pressed',String(name===key));}
   intro.replaceChildren();const heading=document.createElement('h2');heading.textContent=groups[key][1];
-  const copy=document.createElement('p');copy.textContent=groups[key][2];intro.append(heading,copy);refresh();
+  const copy=document.createElement('p');copy.textContent=groups[key][2];intro.append(heading,copy);
+  const summary=document.createElement('div');summary.id='foxDashboardSummary';summary.className='fox-summary';
+  const entries=key==='actual'?
+   [['Recorded readings','Awaiting connections','No fabricated profit or loss'],
+    ['Battery investment','£4,800 target','Payback requires verified history'],
+    ['Monthly calendar','Daily net P&L','Includes EV import when recorded']]:
+   key==='planning'?
+   [['Battery reserve','20% at 19:00','Scenario target, not live SOC'],
+    ['Net grid export','3.5 kW maximum','Instantaneous DNO limit'],
+    ['Cheap import','23:30–05:30','Account eligibility must be confirmed']]:
+   key==='settings'?
+   [['Fox ESS EVO10','Not connected','No inverter commands'],
+    ['Octopus / Ohme','Not connected','Current Charge Pack untouched'],
+    ['Home Assistant','Not connected','Hardware and access required']]:
+   [['Simulation only','No live dispatch','Test results are not real earnings'],
+    ['Data integrity','Missing stays missing','No unverified actuals'],
+    ['Safety','Installer validation needed','No physical fail-safe in browser']];
+  for(const [name,value,note] of entries){
+   const tile=document.createElement('div');tile.className='fox-summary-tile';
+   const label=document.createElement('small');label.textContent=name;
+   const strong=document.createElement('strong');strong.textContent=value;
+   const detail=document.createElement('span');detail.textContent=note;
+   tile.append(label,strong,detail);summary.append(tile);
+  }
+  intro.append(summary);
+  if(key==='actual'||key==='planning'){
+   const action=document.createElement('button');action.type='button';
+   action.className='secondary fox-dashboard-shortcut';
+   action.textContent=key==='actual'?'Explore battery planning':'View daily finances';
+   action.addEventListener('click',()=>select(key==='actual'?'planning':'actual'));
+   intro.append(action);
+  }
+  refresh();
  }
  const actual=document.getElementById('foxActualCosts');
  if(actual){

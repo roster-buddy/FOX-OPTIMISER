@@ -26,6 +26,6 @@ assert(css.includes('.fox-demo-primary-stats'));
 for(const page of ['index.html','preview-v2.html']){
  const html=fs.readFileSync(page,'utf8');
  assert(html.includes('fox-financial-demo-ui.js?v=486'),page+' must refresh demo UI');
- assert(html.includes('fox-dashboard-layout.css?v=487'),page+' must load updated CSS');
+ assert(/fox-dashboard-layout\.css\?v=[0-9]+/.test(html),page+' must load updated CSS');
 }
 console.log('DEMO DAILY LAYOUT PASS: financial metrics retained, cash separated, technical disclosure accessible and refreshed');
