@@ -10,6 +10,7 @@ function summary(report,bookings={}){
  const imported=report?.gridImport?.available&&Number.isFinite(report.gridImport.cost)?report.gridImport.cost:null;
  const exported=report?.gridExport?.available&&Number.isFinite(report.gridExport.cost)?report.gridExport.cost:null;
  const net=report?.gridBalance?.available&&Number.isFinite(report.gridBalance.value)?-report.gridBalance.value:null;
+ const house=report?.savings,force=report?.forceExport;
  const missing=[];
  if(imported===null)missing.push('Import: '+(report?.gridImport?.reason||'Meter readings and historical tariff unavailable'));
  if(exported===null)missing.push('Export: '+(report?.gridExport?.reason||'Meter readings and historical tariff unavailable'));
@@ -18,7 +19,11 @@ function summary(report,bookings={}){
  const sessions=Object.entries(counts).filter(([,n])=>n>0)
   .map(([kind,n])=>labels[kind]+' · '+(n/2).toFixed(1)+'h');
  return {imported:imported===null?'—':cash(imported),exported:exported===null?'—':cash(exported),
-  net:net===null?'—':cash(net),state:net===null?'missing':net>0?'profit':net<0?'loss':'even',
+  net:net===null?'—':cash(net),houseSaved:house?.available&&Number.isFinite(house.value)?cash(house.value):'—',
+  forceEarned:force?.available&&Number.isFinite(force.value)?cash(force.value):'—',
+  benefitNote:'Household: '+(house?.available?'Verified house-only comparison':house?.reason||'No measured house data')+
+   ' · Force export: '+(force?.available?'Gross receipts, already in export P&L':force?.reason||'No verified export attribution'),
+  state:net===null?'missing':net>0?'profit':net<0?'loss':'even',
   missing:missing.length?missing.join(' · '):'Complete recorded grid import and export costs for this accounting day.',
   sessions:sessions.length?sessions.join(' · '):'No Happy Hour or other Octopus sessions saved for this date.'};
 }
@@ -42,6 +47,9 @@ function render(){
  refs.imported.textContent=data.imported;
  refs.exported.textContent=data.exported;
  refs.net.textContent=data.net;
+ refs.houseSaved.textContent=data.houseSaved;
+ refs.forceEarned.textContent=data.forceEarned;
+ refs.benefitNote.textContent=data.benefitNote;
  refs.reason.textContent=data.missing;
  refs.sessions.textContent=data.sessions;
  refs.download.disabled=!root.FoxActualReport?.csv?.(report);
@@ -83,6 +91,16 @@ function init(){
  };
  const exported=metric('Export earned'),imported=metric('Grid import cost'),net=metric('Net P&L');
  card.append(figures);
+ const bonus=element('div','fox-daily-figures fox-house-extras');
+ const benefitMetric=name=>{
+  const item=element('div','fox-daily-figure');item.append(element('span','',name));
+  const value=element('strong','','—');item.append(value);bonus.append(item);return value;
+ };
+ const houseSaved=benefitMetric('Household bill saving · excluding EV');
+ const forceEarned=benefitMetric('Forced battery export earned · gross');
+ card.append(bonus);
+ const benefitNote=element('p','note','Awaiting verified household and forced-export readings.');
+ card.append(benefitNote);
  const reason=element('p','fox-daily-reason','Awaiting recorded readings.');
  const sessions=element('p','fox-daily-sessions','No sessions selected.');
  const download=element('button','secondary','Export this day’s CSV');
@@ -98,7 +116,7 @@ function init(){
  card.append(reason,sessions,download);
  const toolbar=host.querySelector('.fox-session-day-toolbar');
  if(toolbar)toolbar.after(card);else host.prepend(card);
- refs={card,title,imported,exported,net,reason,sessions,download};
+ refs={card,title,imported,exported,net,houseSaved,forceEarned,benefitNote,reason,sessions,download};
  render();
 }
 doc.addEventListener('fox:calendar-day-selected',onDay);
