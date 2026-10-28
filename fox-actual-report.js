@@ -56,7 +56,7 @@ function build(endDay,input,now){
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
  return {importCheck,exportCheck,window,gridImport,gridExport,batteryCharge,evCharge,houseGrid,solarExport,batteryExport,cashBalance,gridBalance,
-  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,solarStorage,
+  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,solarStorage,directSolarUplift,
   standingCharge:unavailable('Historical standing charge not connected')};
 }
 // Compare matching measured intervals; never spread energy uniformly to force a match.
@@ -77,7 +77,7 @@ function reconcile(streams,keys,window,now,exact){
  return {available:true,reason:null};
 }
 function csv(report){
- const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings','solarStorage'];
+ const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings','solarStorage','directSolarUplift'];
  if(!report?.window||(!keys.some(key=>Number.isFinite(report[key]?.total))&&report.dischargeFlow?.available!==true))return null;
  const cell=value=>{
   let text=String(value??'');
