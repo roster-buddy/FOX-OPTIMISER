@@ -41,7 +41,7 @@ function fromMeters(input,window,now,day){
    return fail('Solar and battery measurements must originate from validated Fox ESS sensors');
   const origin=input.solarExportOpportunityIntervals[i];
   if(origin?.start!==r.gridExport.start||origin?.end!==r.gridExport.end||
-   origin.verified!==true||origin.directExportFeasible!==true)
+   origin.verified!==true||(kwh(r.solarToBatteryAc)>0&&origin.directExportFeasible!==true))
    return fail('Direct export alternative at the charge time is not verified within the site export limit');
   if(r.solarToBatteryAc.measurementPoint!=='verified-solar-to-battery-ac'||
     r.genLoadSolar.measurementPoint!=='third-party-solar-generation-ac')
