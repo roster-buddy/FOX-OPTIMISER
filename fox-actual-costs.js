@@ -48,10 +48,9 @@ function setup(){
   <li>Ohme / charger meter: not connected — recorded EV charging.</li></ul>
   <p>Waiting for your hardware and API setup. Live collection is disabled. No API keys are requested or stored here.</p>
   <p>Confirmed import rates including VAT: daytime 23.2995p/kWh; regular overnight 3.4965p/kWh (23:30–05:30). Historical costs require the tariff applicable to each recorded interval, including confirmed Smart charging rates. Your current export rate has not been configured; Agile prices elsewhere are a planning scenario.</p>
-  <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th><th>Data status</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
-  <p id="foxActualReconciliation" aria-live="polite"></p>
   <section id="foxHouseBenefit" class="fox-house-benefit" aria-live="polite">
-   <h3>Household savings · excluding EV</h3>
+   <h3>Daily household savings &amp; battery export</h3>
+   <p class="note">Household figures exclude EV charging. Force-discharge gross receipts are already included in total grid export revenue.</p>
    <p class="note">Compare actual house-only use against buying the same electricity at the applicable grid rate. Battery supply costs include traced charging costs and energy losses.</p>
    <div class="fox-benefit-grid">
     <div><small>House from grid · comparison</small><strong id="foxHouseBaseline">—</strong></div>
@@ -61,6 +60,8 @@ function setup(){
    </div>
    <p id="foxHouseStatus" class="note">Household saving: awaiting verified house-only readings.</p>
    <p id="foxForcedStatus" class="note">Force-discharge earnings: awaiting verified battery-to-grid attribution.</p>
+   <details id="foxDischargeDetails" class="foxDisclosure foxTechnicalDisclosure">
+    <summary>Battery discharge measurements · DC / AC / losses</summary>
    <h4>Battery discharge measurements</h4>
    <div class="fox-benefit-grid fox-discharge-grid">
     <div><small>Battery DC discharge</small><strong id="foxDischargeDC">—</strong></div>
@@ -68,10 +69,17 @@ function setup(){
     <div><small>Measured DC-to-AC difference</small><strong id="foxDischargeLoss">—</strong></div>
    </div>
    <p id="foxDischargeStatus" class="note">Discharge comparison unavailable until verified battery-only DC and AC readings are connected. Metered grid export, not battery output, determines paid earnings.</p>
+   </details>
    <p class="note">Force-discharge earnings are already included in total grid export P&L, not additional income to add again. Additional *net* force-discharge profit and savings after foregone solar export are unavailable until traceable energy costs and alternatives are known.</p>
   </section>
-  <p>Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
-  <p>Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>`;
+  <details id="foxActualReportDetails" class="foxDisclosure foxTechnicalDisclosure">
+   <summary>Full electricity ledger &amp; reconciliation</summary>
+   <p class="note">Detailed meter and device readings, their measured kWh, costs and data-quality checks.</p>
+  <div style="overflow-x:auto"><table style="width:100%;min-width:480px;border-collapse:collapse"><thead><tr><th style="text-align:left">Recorded item</th><th>Energy</th><th>Cost / earnings</th><th>Data status</th></tr></thead><tbody id="foxActualRows"></tbody></table></div>
+  <p id="foxActualReconciliation" aria-live="polite"></p>
+   <p class="note">Battery energy carried between days needs its recorded purchase cost. Solar and battery export can only be split where source measurements support it. Missing source splits or stored-energy costs stay unavailable; total meter export can still be reported separately.</p>
+   <p class="note">Standing charges will be shown separately. Export less battery and EV charging is a cash balance; avoided-import savings are a separate comparison and will not be added to that balance twice.</p>
+  </details>`;
   host.prepend(panel);
   let currentReport=null;
   const download=panel.querySelector('#foxActualCSV');
