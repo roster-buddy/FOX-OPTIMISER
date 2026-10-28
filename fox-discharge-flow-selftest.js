@@ -23,7 +23,7 @@ assert.equal(result.scope.includes('Does not determine billable grid export'),tr
 let r=report.build('2026-10-26',input,w.end);
 assert.equal(r.dischargeFlow.available,true);
 assert.equal(r.forceExport.available,false,'No grid meter means no paid force export even when battery discharges');
-let csv=report.csv({...r,gridImport:{available:true,total:1,cost:1}});
+let csv=report.csv(r);
 assert.match(csv,/batteryDischargeDC/);
 assert.match(csv,/batteryDeliveredAC/);
 assert.match(csv,/batteryDCtoACDifference/);
