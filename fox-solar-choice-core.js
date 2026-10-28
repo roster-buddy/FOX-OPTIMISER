@@ -35,7 +35,7 @@ function compare(s){
  const dischargeFits=stored<=s.batteryDischargeHeadroomKwh+near;
  const headroomOk=delivered<=s.gridExportHeadroomKw*s.laterSlotHours+near;
  const laterFeasible=batteryFits&&reserveOk&&dischargeFits&&headroomOk&&s.laterExportForecastAvailable===true;
- const houseFeasible=batteryFits&&s.houseDemandForecastAvailable===true&&
+ const houseFeasible=batteryFits&&reserveOk&&s.houseDemandForecastAvailable===true&&
   (s.houseNeedKwh===undefined||finite(s.houseNeedKwh)&&s.houseNeedKwh>=delivered-near);
  const exportLater={id:'store-export',label:'Store solar for later Agile export',
   valueGbp:laterFeasible?delivered*(s.laterRateGbp-s.wearGbpPerAcKwh):null,
