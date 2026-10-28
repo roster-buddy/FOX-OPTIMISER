@@ -33,3 +33,17 @@ button{min-height:44px}button:disabled{opacity:.45;cursor:default}input,select{f
 #v4CalendarGrid .fox-day-pnl{opacity:1!important;font-size:12px!important;font-weight:700;margin-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums}
 #v4CalendarGrid .fox-session-badge{color:#bed6ed!important;font-size:10px}
 @media(max-width:650px){#v4CalendarGrid .fox-day-pnl{font-size:10px!important}.fox-month-pnl strong{font-size:19px}}
+
+/* Selected day's measured result and saved Octopus session details. */
+.fox-daily-breakdown{margin:18px 0 22px;padding:18px;border:1px solid #3b506d;border-radius:13px;background:#101e32}
+.fox-daily-breakdown h4{margin:0 0 8px!important;font-size:17px}
+.fox-daily-figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:16px 0}
+.fox-daily-figure{padding:14px 11px;border:1px solid #3c506a;border-radius:11px;background:#182a42;min-width:0}
+.fox-daily-figure span{display:block;font-size:12px;color:#b7c8df;line-height:1.4}
+.fox-daily-figure strong{display:block;margin-top:8px;font-size:22px;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+.fox-daily-breakdown[data-pnl=profit] .fox-daily-figure:last-child{background:#14392f;border-color:#42846f;color:#9df3d3}
+.fox-daily-breakdown[data-pnl=loss] .fox-daily-figure:last-child{background:#40232e;border-color:#aa6070;color:#ffc1ca}
+.fox-daily-reason{font-size:13px;color:#b7c8df;line-height:1.6;margin:10px 0}
+.fox-daily-sessions{font-size:13px;line-height:1.6;color:#a2e7cf}
+.fox-daily-breakdown button{margin-top:12px}
+@media(max-width:520px){.fox-daily-breakdown{padding:13px}.fox-daily-figures{gap:6px}.fox-daily-figure{padding:10px 7px}.fox-daily-figure strong{font-size:17px}.fox-daily-figure span{font-size:11px}}

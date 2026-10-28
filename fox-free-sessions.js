@@ -91,6 +91,7 @@
     if (nextCount <= 4) delete nextOverrides[selected];
     try {
       persist(next, nextOverrides);
+      document.dispatchEvent(new CustomEvent('fox:calendar-sessions-changed', {detail: {day: selected}}));
       message(nextCount > 4 ? 'Two-hour limit overridden for this date.' : 'Session saved on this iPad.');
     } catch (error) {
       message('Could not save: ' + error.message + '. Download a backup.');
@@ -244,6 +245,7 @@
     }
     setMode('day');
     message('');
+    document.dispatchEvent(new CustomEvent('fox:calendar-day-selected', {detail: {day}}));
     document.getElementById('foxSessionDayTitle').scrollIntoView({block: 'nearest'});
   }
 
@@ -292,6 +294,7 @@
       persist(next, nextOverrides);
       drawHours();
       decorateMonth();
+      document.dispatchEvent(new CustomEvent('fox:calendar-sessions-changed', {detail: {day: selected}}));
       message('Sessions restored successfully.');
     } catch (error) { message('Restore failed: ' + error.message); }
     finally { event.target.value = ''; }

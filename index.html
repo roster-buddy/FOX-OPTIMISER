@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0c1424"><meta name="description" content="Read-only Fox ESS battery export optimiser"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="stylesheet" href="styles.css"><title>Fox Optimiser</title><link rel="stylesheet" href="fox-dashboard-layout.css?v=467"></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0c1424"><meta name="description" content="Read-only Fox ESS battery export optimiser"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="stylesheet" href="styles.css"><title>Fox Optimiser</title><link rel="stylesheet" href="fox-dashboard-layout.css?v=469"></head><body>
 <div class="shell"><header><div class="brand"><div class="brandicon">⚡</div><div><h1>Fox Optimiser</h1><p>EVO10 · Agile planning</p></div></div><span class="pill safe">READ-ONLY</span></header>
 <main><section class="hero"><div class="eyebrow">YOUR BATTERY PLAN</div><h2>Make every kWh count.</h2><p>Plan exports around Agile prices while protecting energy for your home. No commands are sent to your inverter.</p><div class="status" id="priceStatus" aria-live="polite">Checking Octopus prices…</div></section>
 <section class="metrics"><article class="metric"><small>Battery SOC · manual estimate</small><strong id="socDisplay">—</strong><span id="batteryKwh">Manual estimate</span></article><article class="metric"><small>Protected reserve</small><strong id="reserveDisplay">2.0 kWh</strong><span>Household forecast included in plan</span></article><article class="metric"><small>Planned battery export</small><strong id="exportDisplay">—</strong><span id="revenueDisplay">Estimated revenue</span></article><article class="metric"><small>Next action</small><strong class="action-text" id="nextAction">—</strong><span id="nextActionTime">Based on available prices</span></article></section>
@@ -40,7 +40,7 @@
 </form><p class="note">House use and solar are manual estimates, not live readings. Battery capacity is a planning assumption, not a verified EVO10 specification.</p></section>
 <section class="panel"><h3>Price data</h3><p class="note">Live public rates can be unavailable before Octopus publishes tomorrow's rates, or if the network blocks the request. Sample data is for testing only and never presented as live.</p><div class="actions"><button id="sampleBtn" class="secondary">Use labelled sample prices</button><button id="liveBtn">Load live Octopus prices</button></div></section>
 <section class="disclaimer">🔒 <b>Safe monitoring mode.</b> No Fox ESS key and no inverter commands. Financial figures exclude standing charges, taxes where applicable, battery degradation and varying import schedules. Do not use these estimates to set physical inverter export limits.</section>
-</main><footer>Fox Optimiser · Prototype v0.1 · UK local time</footer></div><script src="fox-finance-core.js?v=280"></script><script src="fox-energy-core.js?v=270"></script><script src="fox-schedule-core.js?v=410"></script><script src="app.js?v=462" defer></script><script src="fox-v05.js?v=20261025112601" defer></script><script src="fox-free-sessions.js?v=20261025-121636" defer></script><script src="fox-ev-schedule-core.js?v=390"></script>
+</main><footer>Fox Optimiser · Prototype v0.1 · UK local time</footer></div><script src="fox-finance-core.js?v=280"></script><script src="fox-energy-core.js?v=270"></script><script src="fox-schedule-core.js?v=410"></script><script src="app.js?v=462" defer></script><script src="fox-v05.js?v=20261025112601" defer></script><script src="fox-free-sessions.js?v=469" defer></script><script src="fox-ev-schedule-core.js?v=390"></script>
 <script src="fox-smart-charge-core.js?v=410"></script>
 <script src="fox-charge-adapter.js?v=410"></script><script src="fox-overnight-core.js?v=390"></script><script src="fox-target-core.js?v=454"></script><script src="fox-cost-ledger.js?v=460"></script><script src="fox-charging-v08.js?v=462" defer></script>
 <script src="fox-charge-scenario-ui.js?v=453" defer></script><script src="fox-test-v09.js?v=20261025-133156"></script>
@@ -61,7 +61,8 @@
 <script src="fox-recorded-data.js?v=468" defer></script>
 <script src="fox-actual-costs.js?v=468" defer></script>
 <script src="fox-actual-report.js?v=465" defer></script>
-<script src="fox-calendar-pnl.js?v=467" defer></script>
+<script src="fox-calendar-pnl.js?v=469" defer></script>
+<script src="fox-daily-breakdown.js?v=469" defer></script>
 <script src="fox-dashboard-layout.js?v=467" defer></script>
 </body></html>
 
