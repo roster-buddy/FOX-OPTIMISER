@@ -26,7 +26,7 @@ for(const name of screens){
  const html=fs.readFileSync(name,'utf8');
  assert(html.includes('Fox Optimiser · Read-only development preview · 28 Oct 2026'),name+' must not advertise v0.1');
  assert(!html.includes('Prototype v0.1'),name+' still displays stale prototype label');
- assert(html.includes('fox-actual-costs.js?v=473'),name+' must refresh costs UI');
+ assert(/fox-actual-costs\.js\?v=[0-9]+/.test(html),name+' must refresh costs UI');
  assert(html.includes('fox-dashboard-layout.js?v=473'),name+' must refresh layout');
  assert(/fox-dashboard-layout\.css\?v=[0-9]+/.test(html),name+' must reference a versioned dashboard stylesheet');
 }

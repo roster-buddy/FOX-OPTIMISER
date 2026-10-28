@@ -10,7 +10,7 @@ function summary(report,bookings={}){
  const imported=report?.gridImport?.available&&Number.isFinite(report.gridImport.cost)?report.gridImport.cost:null;
  const exported=report?.gridExport?.available&&Number.isFinite(report.gridExport.cost)?report.gridExport.cost:null;
  const net=report?.gridBalance?.available&&Number.isFinite(report.gridBalance.value)?-report.gridBalance.value:null;
- const house=report?.savings,force=report?.forceExport;
+ const house=report?.savings,force=report?.forceExport,solar=report?.solarStorage;
  const missing=[];
  if(imported===null)missing.push('Import: '+(report?.gridImport?.reason||'Meter readings and historical tariff unavailable'));
  if(exported===null)missing.push('Export: '+(report?.gridExport?.reason||'Meter readings and historical tariff unavailable'));
@@ -21,6 +21,7 @@ function summary(report,bookings={}){
  return {imported:imported===null?'—':cash(imported),exported:exported===null?'—':cash(exported),
   net:net===null?'—':cash(net),houseSaved:house?.available&&Number.isFinite(house.value)?cash(house.value):'—',
   forceEarned:force?.available&&Number.isFinite(force.value)?cash(force.value):'—',
+  solarGain:solar?.available&&Number.isFinite(solar.value)?cash(solar.value):'—',
   benefitNote:'Household: '+(house?.available?'Verified house-only comparison':house?.reason||'No measured house data')+
    ' · Force export: '+(force?.available?'Gross receipts, already in export P&L':force?.reason||'No verified export attribution'),
   state:net===null?'missing':net>0?'profit':net<0?'loss':'even',
@@ -49,6 +50,7 @@ function render(){
  refs.net.textContent=data.net;
  refs.houseSaved.textContent=data.houseSaved;
  refs.forceEarned.textContent=data.forceEarned;
+ refs.solarGain.textContent=data.solarGain;
  refs.benefitNote.textContent=data.benefitNote;
  refs.reason.textContent=data.missing;
  refs.sessions.textContent=data.sessions;
@@ -98,6 +100,7 @@ function init(){
  };
  const houseSaved=benefitMetric('Household bill saving · excluding EV');
  const forceEarned=benefitMetric('Forced battery export earned · gross');
+ const solarGain=benefitMetric('Extra solar-to-battery grid export gain vs direct export');
  card.append(bonus);
  const benefitNote=element('p','note','Awaiting verified household and forced-export readings.');
  card.append(benefitNote);
@@ -116,7 +119,7 @@ function init(){
  card.append(reason,sessions,download);
  const toolbar=host.querySelector('.fox-session-day-toolbar');
  if(toolbar)toolbar.after(card);else host.prepend(card);
- refs={card,title,imported,exported,net,houseSaved,forceEarned,benefitNote,reason,sessions,download};
+ refs={card,title,imported,exported,net,houseSaved,forceEarned,solarGain,benefitNote,reason,sessions,download};
  render();
 }
 doc.addEventListener('fox:calendar-day-selected',onDay);

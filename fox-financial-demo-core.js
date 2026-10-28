@@ -4,6 +4,7 @@
 (function(root){
 'use strict';
 const node=typeof module!=='undefined'&&module.exports;
+const storage=node?require('./fox-solar-storage-ledger.js'):root.FoxSolarStorageLedger;
 const MONTH='2026-10';
 const PARAMS=Object.freeze({
  month:MONTH,days:31,chargeEfficiency:0.94,dischargeEfficiency:0.92,
@@ -106,12 +107,39 @@ function makeMonth(options={}){
       forceBatteryCostGbp,forceWearGbp,forceMarginBeforeAlternativeGbp})
      .map(([k,v])=>[k,round(v)]))});
  }
+ // Source attribution is a separate illustrative ledger. Historical stored
+ // solar must remain distinguishable from grid-charged battery energy.
+ const rows=days.map(d=>({
+  day:d.date,solarInputAcKwh:d.solarBatteryInputKwh,
+  solarStoredDcKwh:d.solarBatteryInputKwh*PARAMS.chargeEfficiency,
+  gridStoredDcKwh:d.batteryGridChargeKwh*PARAMS.chargeEfficiency,
+  houseDischargedDcKwh:d.houseBatteryDcKwh,
+  exportDischargedDcKwh:d.forceBatteryDcKwh,
+  houseDeliveredAcKwh:d.houseBatteryKwh,
+  exportToGridAcKwh:d.forceGridExportKwh,
+  directExportRateGbpPerKwh:.12,
+  achievedExportRateGbpPerKwh:d.exportRateGbp,
+  wearGbpPerExportKwh:PARAMS.wearGbpPerExportKwh
+ }));
+ const solarLedger=storage.trace(rows,{simulation:true,initial:{solarDcKwh:0,gridDcKwh:PARAMS.openingStoredKwh,solarOpportunityGbp:0}});
+ if(!solarLedger.available)throw Error('SIMULATED solar origin ledger cannot reconcile: '+solarLedger.reason);
+ for(let i=0;i<days.length;i++){
+  const attribution=solarLedger.days[i];
+  const d=days[i];
+  d.solarStorage=attribution;
+  d.batteryPaybackSavingGbp=round(d.batteryOnlySavingGbp-attribution.houseSolarOpportunityGbp);
+  d.batteryPaybackGainGbp=round(d.batteryPaybackSavingGbp+attribution.solarExportGainGbp);
+ }
  const totals=Object.fromEntries(KEYS.map(key=>[key,round(
   days.reduce((n,d)=>n+d[key],0))]));
+ totals.batteryPaybackSavingGbp=round(days.reduce((n,d)=>n+d.batteryPaybackSavingGbp,0));
+ totals.solarStorageExportGainGbp=round(solarLedger.totals.solarExportGainGbp);
+ totals.solarStorageHouseOpportunityGbp=round(solarLedger.totals.houseSolarOpportunityGbp);
+ totals.batteryPaybackGainGbp=round(days.reduce((n,d)=>n+d.batteryPaybackGainGbp,0));
  return {type:'SIMULATION_ONLY',month:MONTH,params:PARAMS,includeEV,
   days,totals,openingStoredKwh:PARAMS.openingStoredKwh,
   openingStoredCostGbp:PARAMS.openingStoredKwh*PARAMS.cheapImportGbp/PARAMS.chargeEfficiency,
-  closingStoredKwh:stored,closingStoredCostGbp:storedCost};
+  closingStoredKwh:stored,closingStoredCostGbp:storedCost,solarLedger};
 }
 const api={makeMonth,PARAMS,KEYS};
 if(node)module.exports=api;

@@ -57,9 +57,11 @@ function setup(){
     <div><small>Actual house supply cost</small><strong id="foxHouseActual">—</strong></div>
     <div><small>Household bill saving</small><strong id="foxHouseSaving">—</strong></div>
     <div><small>Forced battery export earned</small><strong id="foxForcedEarned">—</strong></div>
+    <div><small>Extra solar-battery export profit above direct export</small><strong id="foxSolarGain">—</strong></div>
    </div>
    <p id="foxHouseStatus" class="note">Household saving: awaiting verified house-only readings.</p>
    <p id="foxForcedStatus" class="note">Force-discharge earnings: awaiting verified battery-to-grid attribution.</p>
+   <p id="foxSolarStatus" class="note">Solar stored in battery: waiting for validated origin, charging-loss and grid-export history. Comparison uses the confirmed direct-export rate at the time solar entered the battery (12p/kWh only where applicable).</p>
    <details id="foxDischargeDetails" class="foxDisclosure foxTechnicalDisclosure">
     <summary>Battery discharge measurements · DC / AC / losses</summary>
    <div class="fox-benefit-grid fox-discharge-grid">
@@ -108,12 +110,22 @@ function setup(){
    currentReport=report;
    if(download)download.disabled=!root.FoxActualReport?.csv(report);
    const money=x=>x?.available&&Number.isFinite(x.value)?((x.value<0?'−£':'£')+Math.abs(x.value).toFixed(2)):'—';
-   const household=report?.savings,force=report?.forceExport,discharge=report?.dischargeFlow;
+   const household=report?.savings,force=report?.forceExport,discharge=report?.dischargeFlow,solar=report?.solarStorage;
    const fill=(selector,value)=>{const el=panel.querySelector(selector);if(el)el.textContent=value;};
    fill('#foxHouseBaseline',household?.available?'£'+household.baselineCost.toFixed(2):'—');
    fill('#foxHouseActual',household?.available?'£'+household.actualCost.toFixed(2):'—');
    fill('#foxHouseSaving',money(household));
    fill('#foxForcedEarned',money(force));
+   fill('#foxSolarGain',money(solar));
+   fill('#foxSolarStatus',solar?.available?
+    'Verified source attribution with proportional battery origin: solar-origin grid export '+
+    solar.solarGridExportAcKwh.toFixed(2)+' kWh earned '+money({available:true,value:solar.solarGridRevenueGbp})+
+    '. Total battery DC-to-AC difference this day '+solar.dcToAc.batteryDischargingKwh.toFixed(2)+
+    ' kWh (house use accounted for separately); actual metered export '+solar.dcToAc.meteredGridExportKwh.toFixed(2)+' kWh'+
+    ', minus '+money({available:true,value:solar.exportSolarOpportunityGbp})+
+    ' in foregone direct solar export and '+money({available:true,value:solar.solarExportWearGbp})+
+    ' in recorded/confirmed wear allowance. Solar used for household supply also forgoes direct export and is deducted in the battery payback tracker.':
+    'Solar-stored export gain unavailable: '+(solar?.reason||'Waiting for validated readings'));
    fill('#foxDischargeDC',discharge?.available?discharge.dcKwh.toFixed(2)+' kWh':'—');
    fill('#foxDischargeAC',discharge?.available?discharge.acKwh.toFixed(2)+' kWh':'—');
    fill('#foxDischargeLoss',discharge?.available?discharge.lossKwh.toFixed(2)+' kWh':'—');

@@ -20,8 +20,8 @@ function monthSummary(reports,year,month){
 }
 function monthBenefits(reports,year,month){
  const days=new Date(Date.UTC(year,month+1,0)).getUTCDate();
- const result={savings:null,savingsDays:0,forced:null,forcedDays:0,days};
- let saved=0,forced=0;
+ const result={savings:null,savingsDays:0,forced:null,forcedDays:0,solarGain:null,solarDays:0,days};
+ let saved=0,forced=0,solar=0;
  for(let day=1;day<=days;day++){
   const key=year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
   const r=reports.get(key);
@@ -31,9 +31,13 @@ function monthBenefits(reports,year,month){
   if(r?.forceExport?.available&&Number.isFinite(r.forceExport.value)){
    forced+=r.forceExport.value;result.forcedDays++;
   }
+  if(r?.solarStorage?.available&&Number.isFinite(r.solarStorage.value)){
+   solar+=r.solarStorage.value;result.solarDays++;
+  }
  }
  if(result.savingsDays)result.savings=saved;
  if(result.forcedDays)result.forced=forced;
+ if(result.solarDays)result.solarGain=solar;
  return result;
 }
 const api={dayResult,monthSummary,monthBenefits};
@@ -54,6 +58,8 @@ function render(){
  extra.textContent='Household bill savings: '+(benefit.savings===null?'—':cash(benefit.savings))+
   ' ('+benefit.savingsDays+'/'+benefit.days+' days) · Force-discharge export earned: '+
   (benefit.forced===null?'—':cash(benefit.forced))+' ('+benefit.forcedDays+'/'+benefit.days+
+  ' days) · Stored solar export gain above direct-export alternative: '+
+  (benefit.solarGain===null?'—':cash(benefit.solarGain))+' ('+benefit.solarDays+'/'+benefit.days+
   ' days). Gross force export is already within export P&L; never add it twice.';
  summary.append(extra);
  const offset=(new Date(year,month,1).getDay()+6)%7;
@@ -87,7 +93,7 @@ function setup(){
 root.FoxCalendarPnl={...api,
  getReport(endDay){return reports.get(endDay)||null;},
  // Verified in-memory accounting days only. Does not include demos or guessed readings.
- getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet}));},
+ getVerifiedPaybackHistory(){return Array.from(reports,(entry)=>({day:entry[0],savings:entry[1].savings,forceNet:entry[1].forceNet,solarStorage:entry[1].solarStorage}));},
  recordDay(endDay,input,now=Date.now()){
  const report=root.FoxActualReport.build(endDay,input,now);
  reports.set(endDay,report);render();
