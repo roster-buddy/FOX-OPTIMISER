@@ -77,6 +77,7 @@ function fromMeters(input,window,now,day){
   metered+=kwh(r.gridExport);
   rows.push({
    day,start:interval.start,end:interval.end,
+   directSolarExportKwh:kwh(r.solarExport),directSolarExportVerified:true,
    solarInputAcKwh:kwh(r.solarToBatteryAc),
    solarStoredDcKwh:kwh(r.solarStoredDc),
    gridStoredDcKwh:kwh(r.gridStoredDc),

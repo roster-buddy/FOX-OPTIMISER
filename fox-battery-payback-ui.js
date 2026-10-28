@@ -18,12 +18,13 @@ function setup(){
  box.innerHTML=[
  '<div class="fox-payback-title"><div><span class="fox-payback-eyebrow">BATTERY INVESTMENT TRACKER</span>',
  '<h3>Break even on your £4,800 battery</h3></div><strong class="fox-payback-target">Target £4,800</strong></div>',
- '<p class="note">Battery-to-house savings plus extra money from storing solar and exporting it later. Lost 12p direct-export opportunity and battery conversion losses are deducted. EV and gross export revenue are not counted twice.</p>',
+ '<p class="note">Battery-to-house savings, additional stored-solar export gains and direct-solar Agile earnings above a verified 12p baseline. Lost 12p direct-export opportunity and battery conversion losses are deducted. EV and gross export revenue are not counted twice.</p>',
  '<div class="fox-payback-stats">',
  ' <div><small>Battery savings · current month</small><strong id="foxPaybackMonth">—</strong></div>',
  ' <div><small>Extra solar-storage export profit · current month</small><strong id="foxPaybackSolarMonth">—</strong></div>',
  ' <div><small>Verified total recovery</small><strong id="foxPaybackSaved">—</strong></div>',
  ' <div><small>Solar-storage export gain · cumulative</small><strong id="foxPaybackSolarTotal">—</strong></div>',
+ ' <div><small>Direct solar Agile uplift above 12p · cumulative</small><strong id="foxPaybackDirectSolar">—</strong></div>',
  ' <div><small>Still to recover</small><strong id="foxPaybackRemaining">£4,800.00</strong></div>',
  ' <div><small>Expected break-even date</small><strong id="foxPaybackDate">Learning…</strong></div>',
  '</div>',
@@ -45,6 +46,7 @@ function setup(){
    get('foxPaybackMonth').textContent='—';
    get('foxPaybackSolarMonth').textContent='—';
    get('foxPaybackSolarTotal').textContent='—';
+   get('foxPaybackDirectSolar').textContent='—';
    get('foxPaybackSaved').textContent='—';
    get('foxPaybackRemaining').textContent=money(core.DEFAULT_TARGET_GBP);
    get('foxPaybackDate').textContent='Learning…';
@@ -63,6 +65,7 @@ function setup(){
   get('foxPaybackMonth').textContent=monthlyCount?money(batteryMonth):'—';
   get('foxPaybackSolarMonth').textContent=monthlyCount?money(solarMonth):'—';
   get('foxPaybackSolarTotal').textContent=money(state.solarStorageGainGbp);
+  get('foxPaybackDirectSolar').textContent=money(state.directSolarUpliftGbp);
   get('foxPaybackSaved').textContent=money(state.totalBenefitGbp);
   get('foxPaybackRemaining').textContent=money(state.remainingGbp);
   get('foxPaybackFill').style.width=state.progressPct.toFixed(1)+'%';

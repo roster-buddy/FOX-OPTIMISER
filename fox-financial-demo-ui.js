@@ -28,6 +28,7 @@ function setup(){
  '  <div><small>Battery-house saving · after solar opportunity cost, EV excluded</small><strong id="foxDemoMonthSaved"></strong></div>',
  '  <div><small>Forced battery export receipts · gross</small><strong id="foxDemoMonthForce"></strong></div>',
  '  <div><small>Extra profit from stored solar export · after 12p alternative and wear</small><strong id="foxDemoMonthSolarGain"></strong></div>',
+ '  <div><small>Direct solar Agile uplift above 12p · monthly</small><strong id="foxDemoMonthDirectSolar"></strong></div>',
  '  <div><small>£4,800 payback · still to recover</small><strong id="foxDemoMonthRemaining"></strong></div>',
  '  <div><small>Break-even · flat-rate illustration</small><strong id="foxDemoMonthBreakEven"></strong></div>',
  ' </div><p id="foxDemoMonthExplanation" class="note"></p>',
@@ -43,12 +44,13 @@ function setup(){
  '   <div><small>Battery-house saving · net of solar opportunity cost</small><strong id="foxDemoHouseSaved"></strong></div>',
  '   <div><small>Forced battery grid export · gross receipts</small><strong id="foxDemoForcedIncome"></strong></div>',
  '   <div><small>Additional stored-solar export gain</small><strong id="foxDemoDaySolarGain"></strong></div>',
+ '   <div><small>Direct solar Agile uplift above 12p</small><strong id="foxDemoDayDirectSolar"></strong></div>',
  '  </div><div class="fox-demo-flow" id="foxDemoHouseFlow"></div>',
  '  <div class="fox-demo-flow" id="foxDemoBatteryFlow"></div>',
  '  <details class="foxDisclosure"><summary>Example discharge costs, export and cash balance</summary>',
  '   <div id="foxDemoDetail" class="fox-demo-detail"></div></details>',
  ' </div>',
- ' <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Battery investment recovery DOES subtract foregone solar export from battery-to-house use; raw meter bill comparisons do not. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
+ ' <p class="fox-demo-caution">Payback uses battery-only house savings MINUS the 12p opportunity value of solar stored and used in the house, PLUS additional solar-origin stored export gain above the 12p direct-export alternative after estimated wear. PLUS direct-solar-only Agile uplift above 12p (floored at zero per day). It excludes the remaining forced-export gross earnings and does not assume those are incremental profit. All values are fabricated examples, including solar, EV charging, energy losses and export rates. Daily totals cannot demonstrate compliance with the 3.5 kW instantaneous grid export limit. Battery investment recovery DOES subtract foregone solar export from battery-to-house use; raw meter bill comparisons do not. Force export margin does not account for keeping the battery for household use or a later export price. Gross export earnings are already included in grid cash balance.</p>',
  '</div>'
  ].join('');
  const heading=actual.querySelector('h2');if(!heading)return;heading.after(el);
@@ -76,6 +78,7 @@ function setup(){
   set('foxDemoHouseCost',money(d.houseActualSupplyGbp));
   set('foxDemoHouseSaved',money(d.batteryPaybackSavingGbp));
   set('foxDemoDaySolarGain',money(d.solarStorage.solarExportGainGbp));
+  set('foxDemoDayDirectSolar',money(d.directSolarUpliftGbp));
   set('foxDemoForcedIncome',money(d.forcedExportReceiptsGbp));
   set('foxDemoHouseFlow','House '+kwh(d.houseDemandKwh)+
     ' = grid '+kwh(d.houseGridKwh)+' + direct solar '+kwh(d.houseSolarKwh)+
@@ -108,6 +111,7 @@ function setup(){
   const t=sample.totals;
   set('foxDemoMonthSaved',money(t.batteryPaybackSavingGbp));
   set('foxDemoMonthSolarGain',money(t.solarStorageExportGainGbp));
+  set('foxDemoMonthDirectSolar',money(t.directSolarUpliftGbp));
   const remaining=Math.max(0,4800-t.batteryPaybackGainGbp);
   set('foxDemoMonthRemaining',money(remaining));
   if(t.batteryPaybackGainGbp>0){
@@ -121,7 +125,7 @@ function setup(){
   set('foxDemoMonthExplanation','House use '+kwh(t.houseDemandKwh)+
    ' · EV separately '+kwh(t.evGridKwh)+' (cost '+money(t.evImportCostGbp)+
    ') · illustrative grid cash balance including EV '+money(t.netGridCashGbp)+
-   '. Break-even uses battery household savings after solar opportunity costs PLUS additional solar-stored export profit above the 12p alternative (after estimated wear). This repeats the SAME fictional October each month; it is not an AI prediction. No actual readings were loaded.');
+   '. Break-even uses battery household savings after solar opportunity costs PLUS additional solar-stored export profit above the 12p alternative (after estimated wear), PLUS direct-solar Agile uplift above 12p on independently exported solar. This repeats the SAME fictional October each month; it is not an AI prediction. No actual readings were loaded.');
   renderDay();
  }
  toggle.addEventListener('click',()=>{

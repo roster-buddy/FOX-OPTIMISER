@@ -8,6 +8,7 @@ const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefi
 const discharge=node?require('./fox-discharge-flow.js'):root.FoxDischargeFlow;
 const solarLedger=node?require('./fox-solar-storage-ledger.js'):root.FoxSolarStorageLedger;
 const solarMeters=node?require('./fox-solar-meter-reconcile.js'):root.FoxSolarMeterReconcile;
+const directSolar=node?require('./fox-direct-solar-uplift.js'):root.FoxDirectSolarUplift;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
@@ -31,6 +32,8 @@ function build(endDay,input,now){
  // All battery source history (including the opening inventory) must be
  // supplied by a verified adapter before solar-origin gains can be claimed.
  const measuredSolar=solarMeters.fromMeters(input,window,now,endDay);
+ const directSolarUplift=measuredSolar.available?directSolar.calculate(measuredSolar.rows):
+  {available:false,reason:measuredSolar.reason,value:null};
  const prior=Array.isArray(input?.solarStorageHistory)?
   input.solarStorageHistory.filter(x=>x.day<endDay):[];
  const inventory=input?.solarOpeningLots;
@@ -53,7 +56,7 @@ function build(endDay,input,now){
   {available:true,value:gridImport.cost-gridExport.cost,reason:null}:
   unavailable('Complete grid import and export pricing required');
  return {importCheck,exportCheck,window,gridImport,gridExport,batteryCharge,evCharge,houseGrid,solarExport,batteryExport,cashBalance,gridBalance,
-  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,solarStorage,
+  savings:household.savings,forceExport:household.forceExport,forceNet:household.forceNet,economicSavings:household.economicSavings,dischargeFlow,solarStorage,directSolarUplift,
   standingCharge:unavailable('Historical standing charge not connected')};
 }
 // Compare matching measured intervals; never spread energy uniformly to force a match.
@@ -74,7 +77,7 @@ function reconcile(streams,keys,window,now,exact){
  return {available:true,reason:null};
 }
 function csv(report){
- const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings','solarStorage'];
+ const keys=['gridImport','gridExport','batteryCharge','evCharge','houseGrid','solarExport','batteryExport','cashBalance','gridBalance','standingCharge','savings','forceExport','forceNet','economicSavings','solarStorage','directSolarUplift'];
  if(!report?.window||(!keys.some(key=>Number.isFinite(report[key]?.total))&&report.dischargeFlow?.available!==true))return null;
  const cell=value=>{
   let text=String(value??'');
