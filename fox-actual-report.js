@@ -8,6 +8,7 @@ const benefit=node?require('./fox-household-benefit.js'):root.FoxHouseholdBenefi
 const discharge=node?require('./fox-discharge-flow.js'):root.FoxDischargeFlow;
 const solarLedger=node?require('./fox-solar-storage-ledger.js'):root.FoxSolarStorageLedger;
 const solarMeters=node?require('./fox-solar-meter-reconcile.js'):root.FoxSolarMeterReconcile;
+const directSolar=node?require('./fox-direct-solar-uplift.js'):root.FoxDirectSolarUplift;
 function build(endDay,input,now){
  const window=dates.windowFor(endDay);
  const streams=input?.streams||{},tariffs=input?.tariffs||{};
