@@ -1,0 +1,53 @@
+name: Fox Optimiser Safari preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fox-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Validate and package safe static preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build allowlisted Pages files
+        run: python3 scripts/build_pages.py
+      - name: Validate Pages files and links
+        run: python3 scripts/test_pages.py
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    name: Publish read-only Safari preview
+    if: github.event_name != 'pull_request'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check Pages configuration
+        uses: actions/configure-pages@v5
+      - name: Deploy Pages site
+        id: deployment
+        uses: actions/deploy-pages@v4
