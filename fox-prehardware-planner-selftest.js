@@ -60,6 +60,43 @@ assert.equal(core.planDay(noPrice).exportKwh,0);
 const combined=core.fullSimulation({day:c});
 assert.equal(combined.ok,true);
 assert.equal(combined.dispatchApproved,false);
+const now=Date.parse('2026-10-28T12:00:00Z');
+const links=at=>({
+ homeAssistant:{configured:true,authenticated:true,connected:true,lastSeenAt:at},
+ foxEss:{configured:true,authenticated:true,connected:true,lastSeenAt:at},
+ octopus:{configured:true,authenticated:true,connected:true,lastSeenAt:at},
+ ohme:{configured:true,authenticated:true,connected:true,lastSeenAt:at},
+ clockSynchronized:true,readOnlyMode:true,tariffEligibilityConfirmed:true,
+ meterPointsValidated:true,socSourceValidated:true,instantaneousLimitsValidated:true,
+ siteExportCapKw:3.5,operatorCommissioned:true,controlAcknowledgementVerified:true,
+ localFailSafeVerified:true,solarOpeningInventoryVerified:true
+});
+const activePlan={id:'simulated-test',kw:2,createdAt:now,expiresAt:now+600000};
+const gated=core.fullSimulation({day:c,recovery:{
+ now,connections:links(now),plan:activePlan,acknowledged:true
+}});
+assert.equal(gated.ok,true,JSON.stringify(gated.diagnostics));
+const outage=links(now);outage.foxEss.connected=false;
+const blocked=core.fullSimulation({day:c,recovery:{
+ now,connections:outage,plan:activePlan,acknowledged:true
+}});
+assert.equal(blocked.ok,false);
+assert.equal(blocked.dispatchApproved,false);
+const overnightSettings={
+ evPercent:0,evCapacity:61.7,evKw:6.63,evEfficiency:90,
+ gridKw:8.3,houseKw:.4,batteryKw:5,batteryEfficiency:90,
+ capacity:10,soc:5,target:100,evConnect:'01:00',evDeadline:'05:30'
+};
+const combinedNight=core.fullSimulation({day:c,overnight:{
+ now:Date.parse('2026-10-27T18:00:00Z'),settings:overnightSettings
+}});
+assert.equal(combinedNight.ok,true,JSON.stringify(combinedNight.diagnostics));
+assert(combinedNight.overnight.predictedSoc>=99.9);
+const impossible=core.fullSimulation({day:c,overnight:{
+ now:Date.parse('2026-10-27T18:00:00Z'),
+ settings:{...overnightSettings,evPercent:100,evConnect:'23:30'}
+}});
+assert.equal(impossible.ok,false);
 const src=fs.readFileSync('fox-prehardware-planner.js','utf8');
 for(const prohibited of ['fetch(','localStorage','forceCharge(','forceDischarge('])
  assert(!src.includes(prohibited),'No hardware control');
