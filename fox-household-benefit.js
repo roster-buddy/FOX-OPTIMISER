@@ -46,12 +46,19 @@ function parts(input,window,now){
   if(!allocation.available)return unavailable('Battery supply cost: '+allocation.reason);
   batteryCost=allocation.cost;
  }
+ // Battery-only avoided grid purchases value the verified house battery AC
+ // at the applicable import rate; direct-solar benefit is intentionally excluded.
+ const batteryAvoided=measured.price(streams.houseBattery,tariffs.import,window,now);
+ if(!batteryAvoided.available)return unavailable('Avoided imports from battery: '+batteryAvoided.reason);
+ const batteryOnlySavingGbp=batteryAvoided.cost-batteryCost;
  const actualCost=grid.cost+batteryCost;
  const saved=baseline.cost-actualCost;
  if(![baseline.cost,grid.cost,batteryCost,actualCost,saved].every(Number.isFinite))
   return unavailable('Household cost is outside the valid range');
  return {available:true,value:saved,total:inspected.houseDemand.total,
   baselineCost:baseline.cost,actualCost,gridCost:grid.cost,batteryCost,
+  batteryOnlySavingGbp,batteryAvoidedGridCostGbp:batteryAvoided.cost,
+  baselineWithoutBatteryGbp:actualCost+batteryOnlySavingGbp,
   houseKwh:inspected.houseDemand.total,solarKwh:inspected.houseDirectSolar.total,
   batteryKwh,gridKwh:inspected.houseGrid.total,
   reason:null,scope:'bill savings only; foregone solar export opportunity and battery wear excluded'};
